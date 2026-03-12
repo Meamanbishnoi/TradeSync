@@ -1,0 +1,209 @@
+:root {
+  /* Notion Light Theme Colors */
+  --bg-color: #ffffff;
+  --text-primary: #37352f;
+  --text-secondary: rgba(55, 53, 47, 0.65);
+  --border-color: rgba(55, 53, 47, 0.16);
+  --bg-hover: rgba(55, 53, 47, 0.08);
+  --bg-secondary: #f7f6f3;
+  --accent-color: #2eaadc;
+  --shadow-sm: rgba(15, 15, 15, 0.1) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 2px 4px;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Notion Dark Theme Colors */
+    --bg-color: #191919;
+    --text-primary: rgba(255, 255, 255, 0.81);
+    --text-secondary: rgba(255, 255, 255, 0.45);
+    --border-color: rgba(255, 255, 255, 0.13);
+    --bg-hover: rgba(255, 255, 255, 0.055);
+    --bg-secondary: #202020;
+    --accent-color: #2eaadc;
+    --shadow-sm: rgba(15, 15, 15, 0.2) 0px 0px 0px 1px, rgba(15, 15, 15, 0.2) 0px 2px 4px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Remove Number Input Arrows */
+input[type="number"]::-webkit-inner-spin-button, 
+input[type="number"]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Fix Date Picker Icon in Dark Mode */
+@media (prefers-color-scheme: dark) {
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+    opacity: 0.6;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+}
+
+/* Typography */
+h1 {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 32px;
+  font-weight: 600;
+  margin-top: 1.4em;
+  margin-bottom: 0.2em;
+}
+
+h3 {
+  font-size: 26px;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.2em;
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 96px;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 24px;
+  }
+}
+
+/* Notion-like components */
+.notion-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-family: var(--font-family);
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.notion-input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+select.notion-input option {
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+}
+
+.notion-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 16px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.1s ease;
+}
+
+.notion-button:hover {
+  background-color: var(--bg-hover);
+}
+
+.notion-button-primary {
+  background-color: var(--text-primary);
+  color: var(--bg-color);
+  border: none;
+}
+
+.notion-button-primary:hover {
+  background-color: var(--text-secondary);
+  color: var(--bg-color);
+}
+
+.notion-card {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 16px;
+  background-color: var(--bg-color);
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.1s ease;
+}
+
+.notion-card:hover {
+  background-color: var(--bg-hover);
+}
+
+.notion-table-row {
+  transition: background-color 0.1s ease;
+}
+
+.notion-table-row:hover {
+  background-color: var(--bg-hover);
+}
+
+.profile-link {
+  transition: background-color 0.2s ease;
+}
+
+.profile-link:hover {
+  background-color: var(--bg-hover) !important;
+}

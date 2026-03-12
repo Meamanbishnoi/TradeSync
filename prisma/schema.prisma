@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  name              String?
+  customInstruments String?
+  customSessions    String?
+  trades    Trade[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Trade {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instrument    String   // e.g., ES, NQ
+  direction     String   // "Long" or "Short"
+  session       String?
+  date          DateTime
+  entryPrice    Float
+  exitPrice     Float
+  pnl           Float
+  setup         String?
+  emotions      String?
+  notes         String?
+  imageUrls     String?
+  contractSize  Float?
+  rating        Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
