@@ -295,6 +295,11 @@ select.notion-input option {
   .main-content {
     width: 100% !important;
   }
+
+  /* Dashboard grid stacks on mobile */
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 @media (min-width: 769px) {

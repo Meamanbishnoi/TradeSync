@@ -113,80 +113,55 @@ export default async function Dashboard() {
         />
       </div>
 
-      {/* Main Grid container */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "32px", marginBottom: "32px" }}>
+      {/* Main Grid: equity curve left, recent trades right */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }} className="dashboard-grid">
         {/* Equity Curve */}
-        <div style={{ backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
-          <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ fontSize: "18px", margin: 0 }}>Performance Overview</h2>
-            <Link href="/analytics" style={{ fontSize: "13px", color: "var(--accent-color)" }}>View full analytics →</Link>
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
+            <Link href="/analytics" style={{ fontSize: "12px", color: "var(--accent-color)" }}>Full analytics →</Link>
           </div>
-          {trades.length > 0 ? (
-            <div style={{ height: "260px" }}>
-              <EquityCurve trades={serializedTrades} />
-            </div>
+          {trades.length > 1 ? (
+            <EquityCurve trades={serializedTrades} />
           ) : (
-            <div style={{ height: "260px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)" }}>
-              No trades yet. Log a trade to see your curve.
+            <div style={{ height: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+              Log more trades to see your curve.
             </div>
           )}
         </div>
-        
-        {/* Recent Trades Table (mini) */}
-        <div style={{ backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "24px", boxShadow: "var(--shadow-sm)" }}>
-          <div style={{ marginBottom: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ fontSize: "18px", margin: 0 }}>Recent Trades</h2>
-            <Link href="/trades" style={{ fontSize: "13px", color: "var(--accent-color)" }}>View all trades →</Link>
+
+        {/* Recent Trades */}
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px", boxShadow: "var(--shadow-sm)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Recent Trades</span>
+            <Link href="/trades" style={{ fontSize: "12px", color: "var(--accent-color)" }}>View all →</Link>
           </div>
-          
           {recentTrades.length > 0 ? (
-            <div className="trades-table-wrapper" style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-                <thead>
-                  <tr style={{ borderBottom: "1px solid var(--border-color)", textAlign: "left", color: "var(--text-secondary)" }}>
-                    <th style={{ padding: "10px 12px", fontWeight: 500 }}>Instrument</th>
-                    <th style={{ padding: "10px 12px", fontWeight: 500 }}>Date</th>
-                    <th style={{ padding: "10px 12px", fontWeight: 500 }}>Dir</th>
-                    <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500 }}>Setup</th>
-                    <th style={{ padding: "10px 12px", fontWeight: 500, textAlign: "right" }}>PNL</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTrades.map((trade: any) => {
-                    const isWin = trade.pnl >= 0;
-                    return (
-                      <tr key={trade.id} className="notion-table-row" style={{ borderBottom: "1px solid var(--border-color)" }}>
-                        <td style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ padding: "12px", fontWeight: 600, display: "block" }}>{trade.instrument}</Link>
-                        </td>
-                        <td style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ padding: "12px", display: "block", color: "inherit" }}>{format(new Date(trade.date), "MM/dd/yyyy")}</Link>
-                        </td>
-                        <td style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ padding: "12px", display: "block" }}>
-                            <span style={{ padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)", fontSize: "12px", color: "var(--text-secondary)" }}>{trade.direction}</span>
-                          </Link>
-                        </td>
-                        <td className="hide-mobile" style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ padding: "12px", display: "block", color: "inherit" }}>{trade.setup || "-"}</Link>
-                        </td>
-                        <td style={{ padding: 0, textAlign: "right" }}>
-                          <Link href={`/trade/${trade.id}`} style={{ padding: "12px", display: "block" }}>
-                            <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", fontWeight: 600 }}>
-                              {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
-                            </span>
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+              {recentTrades.map((trade: any) => {
+                const isWin = trade.pnl >= 0;
+                return (
+                  <Link key={trade.id} href={`/trade/${trade.id}`} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    padding: "8px 10px", borderRadius: "6px", textDecoration: "none",
+                    transition: "background 0.1s",
+                  }}
+                  className="notion-table-row">
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>{trade.instrument}</span>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{format(new Date(trade.date), "MMM d")}</span>
+                      <span style={{ padding: "1px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "11px", color: "var(--text-secondary)" }}>{trade.direction}</span>
+                    </div>
+                    <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
+                      {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
-            <div style={{ textAlign: "center", padding: "32px", color: "var(--text-secondary)" }}>
-              <p style={{ marginBottom: "16px" }}>You have no recent trades.</p>
-              <Link href="/trade/new" className="notion-button">Log your first trade</Link>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "180px", color: "var(--text-secondary)", fontSize: "14px" }}>
+              No trades yet.
             </div>
           )}
         </div>

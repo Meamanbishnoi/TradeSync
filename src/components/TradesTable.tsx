@@ -200,10 +200,9 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
           </div>
         )}
 
-        {/* Row 2: Action buttons */}
+        {/* Row 2: Export button */}
         <div style={{ display: "flex", gap: "8px" }}>
-          <button type="button" onClick={() => setIsAnalyticsOpen(true)} className="notion-button" style={{ padding: "6px 12px", fontSize: "13px", flex: "1" }}>Analytics</button>
-          <button type="button" onClick={() => exportCsv(filteredTrades)} className="notion-button" style={{ padding: "6px 12px", fontSize: "13px", flex: "1" }}>Export CSV</button>
+          <button type="button" onClick={() => exportCsv(filteredTrades)} className="notion-button" style={{ padding: "6px 12px", fontSize: "13px" }}>↓ Export CSV</button>
         </div>
       </div>
 
