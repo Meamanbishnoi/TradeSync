@@ -174,8 +174,15 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
               <option value="20">20</option>
               <option value="50">50</option>
               <option value="All">All</option>
+              <option value="Custom">Custom</option>
             </select>
           </div>
+          {pageSize === "Custom" && (
+            <div style={{ flex: "0 1 70px", minWidth: "60px" }}>
+              <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Count</label>
+              <input type="number" min="1" value={customPageSize} onChange={e => { setCustomPageSize(Math.max(1, parseInt(e.target.value) || 1)); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px" }} />
+            </div>
+          )}
           <div style={{ marginLeft: "auto", textAlign: "right", fontSize: "14px", paddingBottom: "2px" }}>
             <span style={{ color: totalFilteredPnl >= 0 ? "#0f7b6c" : "#eb5757", fontWeight: 700 }}>
               {totalFilteredPnl >= 0 ? "+" : ""}${totalFilteredPnl.toFixed(2)}
