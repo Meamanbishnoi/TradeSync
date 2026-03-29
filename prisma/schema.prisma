@@ -8,15 +8,18 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
+  id                String    @id @default(cuid())
+  email             String    @unique
   password          String
   name              String?
   customInstruments String?
   customSessions    String?
-  trades    Trade[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  emailVerified     Boolean   @default(false)
+  verifyToken       String?
+  verifyTokenExp    DateTime?
+  trades            Trade[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
 
 model Trade {

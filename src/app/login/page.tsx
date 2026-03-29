@@ -1,23 +1,26 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const params = useSearchParams();
+  const verified = params.get("verified");
+  const tokenError = params.get("error");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     const res = await signIn("credentials", { email, password, redirect: false });
     if (res?.error) {
-      setError("Invalid credentials. Please try again.");
+      setError(res.error === "CredentialsSignin" ? "Invalid credentials. Please try again." : res.error);
     } else {
       router.push("/");
       router.refresh();
@@ -27,6 +30,22 @@ export default function LoginPage() {
   return (
     <div style={{ maxWidth: "400px", margin: "32px auto" }}>
       <h1 style={{ fontSize: "30px", textAlign: "center", marginBottom: "24px" }}>Log in to your Journal</h1>
+
+      {verified && (
+        <div style={{ color: "#0f7b6c", fontSize: "14px", backgroundColor: "rgba(15,123,108,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
+          ✓ Email verified! You can now log in.
+        </div>
+      )}
+      {tokenError === "token-expired" && (
+        <div style={{ color: "#eb5757", fontSize: "14px", backgroundColor: "rgba(235,87,87,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
+          Verification link expired. Please register again to get a new link.
+        </div>
+      )}
+      {tokenError === "invalid-token" && (
+        <div style={{ color: "#eb5757", fontSize: "14px", backgroundColor: "rgba(235,87,87,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
+          Invalid verification link. Please try again.
+        </div>
+      )}
 
       <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {error && (
@@ -72,5 +91,13 @@ export default function LoginPage() {
         Don&apos;t have an account? <Link href="/register" style={{ color: "var(--text-primary)", textDecoration: "underline" }}>Sign up</Link>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

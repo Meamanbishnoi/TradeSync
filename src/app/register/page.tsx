@@ -21,11 +21,12 @@ export default function RegisterPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password }),
     });
-    if (res.ok) {
-      const loginRes = await signIn("credentials", { email, password, redirect: false });
-      if (!loginRes?.error) { router.push("/"); router.refresh(); }
+    const data = await res.json();
+    if (res.ok || res.status === 200) {
+      setError("");
+      // Show success — don't auto-login, user must verify first
+      router.push(`/register/verify?email=${encodeURIComponent(email)}`);
     } else {
-      const data = await res.json();
       setError(data.message || "Registration failed");
     }
   };
