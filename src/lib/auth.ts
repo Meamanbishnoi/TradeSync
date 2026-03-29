@@ -29,10 +29,6 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        if (!user.emailVerified) {
-          throw new Error("Please verify your email before logging in. Check your inbox.");
-        }
-
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
           user.password
@@ -56,7 +52,8 @@ export const authOptions: NextAuthOptions = {
           create: {
             email: user.email,
             name: user.name ?? null,
-            password: "", // no password for OAuth users
+            password: "",
+            emailVerified: true,
           },
         });
         user.id = dbUser.id;
