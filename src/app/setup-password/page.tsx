@@ -97,10 +97,6 @@ export default function SetupPasswordPage() {
           {isSubmitting ? "Setting password..." : "Set Password & Continue"}
         </button>
       </form>
-
-      <button onClick={() => router.push("/")} style={{ display: "block", width: "100%", marginTop: "12px", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", fontSize: "13px", textAlign: "center" }}>
-        Skip for now →
-      </button>
     </div>
   );
 }

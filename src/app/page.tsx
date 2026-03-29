@@ -69,10 +69,11 @@ export default async function Dashboard() {
   const userId = session.user.id;
   const trades = await prisma.trade.findMany({
     where: { userId },
-    orderBy: { date: "asc" }, // sorting asc for equity curve chronological order
+    orderBy: { date: "asc" },
   });
 
-  const serializedTrades = trades.map((trade: any) => ({
+  type SerializedTrade = Omit<typeof trades[0], "date"> & { date: string };
+  const serializedTrades: SerializedTrade[] = trades.map(trade => ({
     ...trade,
     date: trade.date.toISOString(),
   }));
@@ -100,6 +101,22 @@ export default async function Dashboard() {
   const avgWin = wins > 0 ? grossWin / wins : 0;
   const avgLoss = losses > 0 ? grossLoss / losses : 0;
   const avgRRR = (avgWin > 0 && avgLoss > 0) ? (avgWin / avgLoss) : 0;
+
+  // Current win/loss streak (day-based)
+  const tradingDays = [...new Map(
+    trades.map(t => [t.date.toISOString().slice(0, 10), t])
+  ).entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  const dayPnls = tradingDays.map(([, t]) => t.pnl);
+  let currentStreak = 0;
+  let streakType: "win" | "loss" | null = null;
+  if (dayPnls.length > 0) {
+    streakType = dayPnls[dayPnls.length - 1] >= 0 ? "win" : "loss";
+    for (let i = dayPnls.length - 1; i >= 0; i--) {
+      const isWinDay = dayPnls[i] >= 0;
+      if ((streakType === "win" && isWinDay) || (streakType === "loss" && !isWinDay)) currentStreak++;
+      else break;
+    }
+  }
 
   // For display, we want recent trades (descending)
   const recentTrades = [...serializedTrades].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
@@ -153,6 +170,13 @@ export default async function Dashboard() {
           label="Total Trades" 
           value={totalTrades.toString()} 
         />
+        {currentStreak > 0 && streakType && (
+          <StatTile
+            label="Current Streak"
+            value={`${currentStreak} day${currentStreak !== 1 ? "s" : ""}`}
+            sub={<span style={{ color: streakType === "win" ? "#0f7b6c" : "#eb5757" }}>{streakType === "win" ? "🔥 Win streak" : "📉 Loss streak"}</span>}
+          />
+        )}
       </div>
 
       {/* Main Grid: equity curve left, recent trades right */}

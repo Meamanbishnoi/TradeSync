@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import AnalyticsModal from "@/components/AnalyticsModal";
 import { useToast } from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 
@@ -33,7 +32,6 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
   const [pageSize, setPageSize] = useState<number | "All" | "Custom">(20);
   const [customPageSize, setCustomPageSize] = useState<number>(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDeleteModalOpen, setIsBulkDeleteModalOpen] = useState(false);
@@ -306,8 +304,6 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
           </>
         )}
       </>
-
-      <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} trades={filteredTrades} />
 
       <ConfirmModal 
         isOpen={isBulkDeleteModalOpen}
