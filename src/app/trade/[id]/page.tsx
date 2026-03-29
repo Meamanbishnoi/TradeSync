@@ -38,10 +38,26 @@ export default async function TradeDetailPage({ params }: { params: Promise<{ id
     if (trade.imageUrls) imageUrls = JSON.parse(trade.imageUrls);
   } catch (e) {}
 
+  const allTrades = await prisma.trade.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true }
+  });
+
+  const currentIndex = allTrades.findIndex(t => t.id === trade.id);
+  const nextTradeId = currentIndex > 0 ? allTrades[currentIndex - 1].id : null;
+  const prevTradeId = currentIndex !== -1 && currentIndex < allTrades.length - 1 ? allTrades[currentIndex + 1].id : null;
+
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
-      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Link href="/" style={{ color: "var(--text-secondary)", fontSize: "16px", textDecoration: "none" }}>← Back to trades</Link>
+      <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <Link href="/" style={{ color: "var(--text-secondary)", fontSize: "16px", textDecoration: "none" }}>← Back to trades</Link>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {prevTradeId && <Link href={`/trade/${prevTradeId}`} className="notion-button" style={{ fontSize: "14px", padding: "4px 8px" }}>← Prev</Link>}
+            {nextTradeId && <Link href={`/trade/${nextTradeId}`} className="notion-button" style={{ fontSize: "14px", padding: "4px 8px" }}>Next →</Link>}
+          </div>
+        </div>
         <div style={{ display: "flex", gap: "8px" }}>
           <DeleteTradeButton tradeId={trade.id} />
           <Link href={`/trade/${trade.id}/edit`} className="notion-button" style={{ fontSize: "14px", padding: "4px 8px" }}>Edit</Link>

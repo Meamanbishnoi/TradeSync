@@ -54,6 +54,29 @@ export default function EditTradePage() {
   const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
 
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialDataStr, setInitialDataStr] = useState<string | null>(null);
+  const [initialExistingUrlsStr, setInitialExistingUrlsStr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialLoad) return;
+    const isDirty = (initialDataStr !== null && JSON.stringify(formData) !== initialDataStr) 
+                 || (initialExistingUrlsStr !== null && JSON.stringify(existingUrls) !== initialExistingUrlsStr)
+                 || newFiles.length > 0;
+    setHasUnsavedChanges(isDirty);
+  }, [formData, initialDataStr, existingUrls, initialExistingUrlsStr, newFiles, initialLoad]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges, isSubmitting]);
+
   useEffect(() => {
     async function fetchTrade() {
       try {
@@ -61,7 +84,7 @@ export default function EditTradePage() {
         if (!res.ok) throw new Error("Failed to load trade");
         const data = await res.json();
 
-        setFormData({
+        const loadedData = {
           instrument: data.instrument || "",
           direction: data.direction || "Long",
           date: new Date(data.date).toISOString().slice(0, 10),
@@ -74,11 +97,21 @@ export default function EditTradePage() {
           emotions: data.emotions || "",
           notes: data.notes || "",
           rating: data.rating || 0,
-        });
+        };
+        setFormData(loadedData);
+        setInitialDataStr(JSON.stringify(loadedData));
 
         try {
-          if (data.imageUrls) setExistingUrls(JSON.parse(data.imageUrls));
-        } catch {}
+          if (data.imageUrls) {
+            const urls = JSON.parse(data.imageUrls);
+            setExistingUrls(urls);
+            setInitialExistingUrlsStr(JSON.stringify(urls));
+          } else {
+            setInitialExistingUrlsStr("[]");
+          }
+        } catch {
+          setInitialExistingUrlsStr("[]");
+        }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "An error occurred loading the trade";
         showToast(msg, "error");
@@ -181,7 +214,16 @@ export default function EditTradePage() {
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
       <div style={{ marginBottom: "24px" }}>
-        <Link href={`/trade/${tradeId}`} style={{ color: "var(--text-secondary)", fontSize: "16px", textDecoration: "none" }}>← Back to trade details</Link>
+        <button 
+          onClick={() => {
+            if (!hasUnsavedChanges || window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
+              router.push(`/trade/${tradeId}`);
+            }
+          }}
+          style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "16px", cursor: "pointer", padding: 0 }}
+        >
+          ← Back to trade details
+        </button>
       </div>
 
       <h1 style={{ fontSize: "38px", marginBottom: "32px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>Edit Trade</h1>

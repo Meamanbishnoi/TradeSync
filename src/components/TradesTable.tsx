@@ -32,6 +32,7 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
 
   const [activeTab, setActiveTab] = useState<Tab>("trades");
   const [timeFilter, setTimeFilter] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [sortField, setSortField] = useState<"date" | "pnl" | "contractSize">("date");
@@ -47,6 +48,12 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
 
   const filteredTrades = useMemo(() => {
     let filtered = [...initialTrades];
+
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(t => t.instrument.toLowerCase().includes(q));
+    }
+
     const now = new Date();
     if (timeFilter === "Today") {
       filtered = filtered.filter(t => {
@@ -77,7 +84,7 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
       return sortDirection === "asc" ? sA - sB : sB - sA;
     });
     return filtered;
-  }, [initialTrades, timeFilter, customStart, customEnd, sortField, sortDirection]);
+  }, [initialTrades, timeFilter, customStart, customEnd, sortField, sortDirection, searchQuery]);
 
   const handleSort = (field: "date" | "pnl" | "contractSize") => {
     if (sortField === field) setSortDirection(p => p === "asc" ? "desc" : "asc");
@@ -157,6 +164,10 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
       <div style={{ marginBottom: "16px" }}>
         {/* Row 1: Time filter + PNL summary */}
         <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", marginBottom: "8px", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 120px", minWidth: "120px" }}>
+            <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Search Instrument</label>
+            <input type="text" value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px", width: "100%", boxSizing: "border-box" }} placeholder="e.g. NQ" />
+          </div>
           <div style={{ flex: "1 1 140px", minWidth: "120px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Time Period</label>
             <select value={timeFilter} onChange={e => { setTimeFilter(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px" }}>

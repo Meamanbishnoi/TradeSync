@@ -50,6 +50,24 @@ export default function NewTradePage() {
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [initialDataStr] = useState(JSON.stringify(formData));
+
+  useEffect(() => {
+    const isDirty = JSON.stringify(formData) !== initialDataStr || existingUrls.length > 0 || newFiles.length > 0;
+    setHasUnsavedChanges(isDirty);
+  }, [formData, initialDataStr, existingUrls, newFiles]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !isSubmitting) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges, isSubmitting]);
 
   useEffect(() => {
     async function fetchPreferences() {
@@ -135,7 +153,16 @@ export default function NewTradePage() {
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
       <div style={{ marginBottom: "24px" }}>
-        <Link href="/" style={{ color: "var(--text-secondary)", fontSize: "16px" }}>← Back to trades</Link>
+        <button 
+          onClick={() => {
+            if (!hasUnsavedChanges || window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
+              router.push("/");
+            }
+          }}
+          style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "16px", cursor: "pointer", padding: 0 }}
+        >
+          ← Back to trades
+        </button>
       </div>
 
       <h1 style={{ fontSize: "38px", marginBottom: "32px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>New Trade</h1>
