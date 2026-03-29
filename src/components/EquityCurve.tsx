@@ -119,7 +119,7 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
   };
 
   return (
-    <div style={{ marginBottom: "32px" }}>
+    <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" }}>
         <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Equity Curve</span>
         <div style={{ display: "flex", gap: "16px", alignItems: "baseline" }}>
@@ -230,41 +230,41 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
           })()}
         </svg>
 
-        {/* Tooltip box */}
+        {/* Tooltip box — always clamped inside the container */}
         {tooltip && (() => {
           const p = tooltip.point;
           const isWin = p.tradePnl >= 0;
-          // Position tooltip: flip if near right edge
           const svgEl = svgRef.current;
           const svgWidth = svgEl?.getBoundingClientRect().width ?? W;
           const pxX = (tooltip.x / W) * svgWidth;
-          const flipLeft = pxX > svgWidth * 0.65;
+          const tooltipW = 150;
+          const flipLeft = pxX > svgWidth - tooltipW - 16;
           return (
             <div style={{
               position: "absolute",
-              top: "10px",
-              left: flipLeft ? undefined : `calc(${(tooltip.x / W) * 100}% + 10px)`,
-              right: flipLeft ? `calc(${100 - (tooltip.x / W) * 100}% + 10px)` : undefined,
+              top: "8px",
+              left: flipLeft ? undefined : `${Math.min(pxX + 10, svgWidth - tooltipW - 8)}px`,
+              right: flipLeft ? `${svgWidth - pxX + 10}px` : undefined,
               backgroundColor: "var(--bg-color)",
               border: "1px solid var(--border-color)",
               borderRadius: "8px",
-              padding: "10px 14px",
-              fontSize: "13px",
+              padding: "8px 12px",
+              fontSize: "12px",
               pointerEvents: "none",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-              minWidth: "160px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              width: `${tooltipW}px`,
               zIndex: 10,
             }}>
-              <div style={{ color: "var(--text-secondary)", marginBottom: "6px" }}>
+              <div style={{ color: "var(--text-secondary)", marginBottom: "5px", fontSize: "11px" }}>
                 {format(new Date(p.date), "MMM d, yyyy")}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "16px", marginBottom: "3px" }}>
-                <span style={{ color: "var(--text-secondary)" }}>Trade</span>
-                <span style={{ fontWeight: 600, color: isWin ? "#0f7b6c" : "#eb5757" }}>{fmtPnl(p.tradePnl)}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
+                <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>Trade</span>
+                <span style={{ fontWeight: 600, color: isWin ? "#0f7b6c" : "#eb5757", fontSize: "12px" }}>{fmtPnl(p.tradePnl)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: "16px" }}>
-                <span style={{ color: "var(--text-secondary)" }}>Cumulative</span>
-                <span style={{ fontWeight: 700, color: p.cumPnl >= 0 ? "#0f7b6c" : "#eb5757" }}>{fmtPnl(p.cumPnl)}</span>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>Total</span>
+                <span style={{ fontWeight: 700, color: p.cumPnl >= 0 ? "#0f7b6c" : "#eb5757", fontSize: "12px" }}>{fmtPnl(p.cumPnl)}</span>
               </div>
             </div>
           );

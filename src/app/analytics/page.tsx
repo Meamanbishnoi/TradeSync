@@ -73,8 +73,7 @@ export default async function AnalyticsPage() {
           </div>
 
           {/* Equity Curve */}
-          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
-            <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "12px" }}>Equity Curve</div>
+          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px 20px 12px" }}>
             <EquityCurve trades={serializedTrades} />
           </div>
 

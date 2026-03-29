@@ -114,26 +114,26 @@ export default async function Dashboard() {
       </div>
 
       {/* Main Grid: equity curve left, recent trades right */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "32px" }} className="dashboard-grid">
-        {/* Equity Curve */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px", boxShadow: "var(--shadow-sm)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "32px" }} className="dashboard-grid">
+        {/* Equity Curve card */}
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px 20px 12px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
             <Link href="/analytics" style={{ fontSize: "12px", color: "var(--accent-color)" }}>Full analytics →</Link>
           </div>
           {trades.length > 1 ? (
             <EquityCurve trades={serializedTrades} />
           ) : (
-            <div style={{ height: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+            <div style={{ height: "160px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
               Log more trades to see your curve.
             </div>
           )}
         </div>
 
-        {/* Recent Trades */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px", boxShadow: "var(--shadow-sm)" }}>
+        {/* Recent Trades card */}
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Recent Trades</span>
+            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Recent Trades</span>
             <Link href="/trades" style={{ fontSize: "12px", color: "var(--accent-color)" }}>View all →</Link>
           </div>
           {recentTrades.length > 0 ? (
@@ -144,15 +144,13 @@ export default async function Dashboard() {
                   <Link key={trade.id} href={`/trade/${trade.id}`} style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     padding: "8px 10px", borderRadius: "6px", textDecoration: "none",
-                    transition: "background 0.1s",
-                  }}
-                  className="notion-table-row">
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
-                      <span style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-primary)" }}>{trade.instrument}</span>
-                      <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{format(new Date(trade.date), "MMM d")}</span>
-                      <span style={{ padding: "1px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "11px", color: "var(--text-secondary)" }}>{trade.direction}</span>
+                  }} className="notion-table-row">
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden" }}>
+                      <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--text-primary)", flexShrink: 0 }}>{trade.instrument}</span>
+                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", flexShrink: 0 }}>{format(new Date(trade.date), "MMM d")}</span>
+                      <span style={{ padding: "1px 5px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "11px", color: "var(--text-secondary)", flexShrink: 0 }}>{trade.direction}</span>
                     </div>
-                    <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
+                    <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", fontWeight: 700, fontSize: "13px", flexShrink: 0, marginLeft: "8px" }}>
                       {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
                     </span>
                   </Link>
@@ -160,7 +158,7 @@ export default async function Dashboard() {
               })}
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "180px", color: "var(--text-secondary)", fontSize: "14px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "160px", color: "var(--text-secondary)", fontSize: "14px" }}>
               No trades yet.
             </div>
           )}
