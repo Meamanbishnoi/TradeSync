@@ -13,6 +13,7 @@ export default function ProfilePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
+  const [hasPassword, setHasPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -20,6 +21,10 @@ export default function ProfilePage() {
     customInstruments: "",
     customSessions: "",
   });
+
+  const [pwForm, setPwForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+  const [showPw, setShowPw] = useState({ old: false, new: false, confirm: false });
+  const [isChangingPw, setIsChangingPw] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -36,6 +41,7 @@ export default function ProfilePage() {
           customInstruments: data.customInstruments ? JSON.parse(data.customInstruments).join(", ") : "",
           customSessions: data.customSessions ? JSON.parse(data.customSessions).join(", ") : "",
         });
+        setHasPassword(!!data.hasPassword);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "An error occurred loading the profile";
         showToast(msg, "error");
@@ -80,8 +86,31 @@ export default function ProfilePage() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleBackup = () => {
-    window.location.href = "/api/backup";
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      showToast("Passwords do not match", "error"); return;
+    }
+    setIsChangingPw(true);
+    try {
+      const res = await fetch("/api/profile/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldPassword: pwForm.oldPassword, newPassword: pwForm.newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message);
+      showToast("Password updated successfully", "success");
+      setPwForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      setHasPassword(true);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Error updating password", "error");
+    } finally {
+      setIsChangingPw(false);
+    }
+  };
+
+  const handleBackup = () => {    window.location.href = "/api/backup";
   };
 
   const handleRestoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -165,6 +194,50 @@ export default function ProfilePage() {
         <div>
           <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Custom Sessions</label>
           <textarea name="customSessions" value={formData.customSessions} onChange={handleChange} className="notion-input" style={{ minHeight: "80px", resize: "vertical" }} placeholder="e.g. NY-AM, NY-PM, London, Asia" />
+        </div>
+
+        <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "16px 0" }} />
+        
+        <h2 style={{ fontSize: "22px", marginBottom: "8px" }}>Password</h2>
+        <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "16px" }}>
+          {hasPassword ? "Change your current password." : "You signed in with Google. Set a password to also log in with email."}
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          {hasPassword && (
+            <div>
+              <label style={{ display: "block", fontSize: "14px", color: "var(--text-secondary)", marginBottom: "4px" }}>Current Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPw.old ? "text" : "password"} value={pwForm.oldPassword} onChange={e => setPwForm(p => ({ ...p, oldPassword: e.target.value }))} className="notion-input" placeholder="Enter current password" style={{ paddingRight: "40px" }} />
+                <button type="button" onClick={() => setShowPw(p => ({ ...p, old: !p.old }))} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex" }}>
+                  {showPw.old ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                </button>
+              </div>
+            </div>
+          )}
+          <div>
+            <label style={{ display: "block", fontSize: "14px", color: "var(--text-secondary)", marginBottom: "4px" }}>New Password</label>
+            <div style={{ position: "relative" }}>
+              <input type={showPw.new ? "text" : "password"} value={pwForm.newPassword} onChange={e => setPwForm(p => ({ ...p, newPassword: e.target.value }))} className="notion-input" placeholder="Enter new password" style={{ paddingRight: "40px" }} />
+              <button type="button" onClick={() => setShowPw(p => ({ ...p, new: !p.new }))} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex" }}>
+                {showPw.new ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: "block", fontSize: "14px", color: "var(--text-secondary)", marginBottom: "4px" }}>Confirm New Password</label>
+            <div style={{ position: "relative" }}>
+              <input type={showPw.confirm ? "text" : "password"} value={pwForm.confirmPassword} onChange={e => setPwForm(p => ({ ...p, confirmPassword: e.target.value }))} className="notion-input" placeholder="Confirm new password" style={{ paddingRight: "40px" }} />
+              <button type="button" onClick={() => setShowPw(p => ({ ...p, confirm: !p.confirm }))} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex" }}>
+                {showPw.confirm ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+              </button>
+            </div>
+          </div>
+          <div>
+            <button type="button" onClick={handlePasswordChange} disabled={isChangingPw || !pwForm.newPassword} className="notion-button notion-button-primary" style={{ padding: "8px 20px", opacity: isChangingPw || !pwForm.newPassword ? 0.6 : 1 }}>
+              {isChangingPw ? "Updating..." : hasPassword ? "Change Password" : "Set Password"}
+            </button>
+          </div>
         </div>
 
         <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "16px 0" }} />

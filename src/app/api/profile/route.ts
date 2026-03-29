@@ -22,6 +22,7 @@ export async function GET() {
         customInstruments: true,
         customSessions: true,
         createdAt: true,
+        password: true,
       },
     });
 
@@ -29,7 +30,7 @@ export async function GET() {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json(user);
+    return NextResponse.json({ ...user, hasPassword: !!(user.password && user.password.length > 0), password: undefined });
   } catch (error) {
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
