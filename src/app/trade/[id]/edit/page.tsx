@@ -6,6 +6,7 @@ import Link from "next/link";
 import MultiImageUploader from "@/components/MultiImageUploader";
 import ComboBox from "@/components/ComboBox";
 import StarRating from "@/components/StarRating";
+import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/Toast";
 import { POINT_MULTIPLIERS, DEFAULT_SESSIONS } from "@/lib/constants";
 
@@ -31,6 +32,7 @@ export default function EditTradePage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const [formData, setFormData] = useState({
     instrument: "",
@@ -215,8 +217,11 @@ export default function EditTradePage() {
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
       <div style={{ marginBottom: "24px" }}>
         <button 
+          type="button"
           onClick={() => {
-            if (!hasUnsavedChanges || window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
+            if (hasUnsavedChanges) {
+              setShowExitConfirm(true);
+            } else {
               router.push(`/trade/${tradeId}`);
             }
           }}
@@ -310,6 +315,17 @@ export default function EditTradePage() {
           </button>
         </div>
       </form>
+
+      <ConfirmModal
+        isOpen={showExitConfirm}
+        title="Unsaved Changes"
+        message="You have unsaved changes. Are you sure you want to leave? Your unsaved data will be lost."
+        confirmLabel="Leave Page"
+        cancelLabel="Stay"
+        onConfirm={() => router.push(`/trade/${tradeId}`)}
+        onCancel={() => setShowExitConfirm(false)}
+        isDestructive={true}
+      />
     </div>
   );
 }
