@@ -1,270 +1,240 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
 
-interface Trade {
-  date: string;
-  pnl: number;
-}
+interface Trade { date: string; pnl: number; }
+interface Point { x: number; y: number; cumPnl: number; date: string; tradePnl: number; index: number; }
 
-interface Point {
-  x: number;
-  y: number;
-  cumPnl: number;
-  date: string;
-  tradePnl: number;
-  index: number;
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 1; i < pts.length; i++) {
+    const prev = pts[i - 1];
+    const curr = pts[i];
+    const cpx = (prev.x + curr.x) / 2;
+    d += ` C ${cpx} ${prev.y}, ${cpx} ${curr.y}, ${curr.x} ${curr.y}`;
+  }
+  return d;
 }
 
 export default function EquityCurve({ trades }: { trades: Trade[] }) {
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; point: Point } | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(600);
+  const [tooltip, setTooltip] = useState<{ px: number; point: Point } | null>(null);
 
-  const { points, min, max, yTicks } = useMemo(() => {
-    if (trades.length === 0) return { points: [], min: 0, max: 0, yTicks: [] };
-
-    const sorted = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    let cumulative = 0;
-    const rawPoints = sorted.map((t, i) => {
-      cumulative += t.pnl;
-      return { cumPnl: cumulative, date: t.date, tradePnl: t.pnl, index: i };
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      setWidth(entries[0].contentRect.width);
     });
+    ro.observe(el);
+    setWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
 
-    const values = rawPoints.map(p => p.cumPnl);
-    const rawMin = Math.min(0, ...values);
-    const rawMax = Math.max(0, ...values);
+  const H = 220;
+  const PAD_T = 12;
+  const PAD_B = 32;
+  const PAD_L = 56;
+  const PAD_R = 12;
+  const chartW = Math.max(width - PAD_L - PAD_R, 1);
+  const chartH = H - PAD_T - PAD_B;
 
-    // Nice round tick spacing
+  const { points, yTicks, min, max } = useMemo(() => {
+    if (trades.length < 2) return { points: [], yTicks: [], min: 0, max: 0 };
+    const sorted = [...trades].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let cum = 0;
+    const raw = sorted.map((t, i) => ({ cumPnl: (cum += t.pnl), date: t.date, tradePnl: t.pnl, index: i }));
+    const vals = raw.map(p => p.cumPnl);
+    const rawMin = Math.min(0, ...vals);
+    const rawMax = Math.max(0, ...vals);
     const range = rawMax - rawMin || 1;
     const roughStep = range / 4;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
-    const niceSteps = [1, 2, 2.5, 5, 10];
-    const step = niceSteps.map(s => s * magnitude).find(s => s >= roughStep) ?? magnitude;
-
-    const niceMin = Math.floor(rawMin / step) * step;
-    const niceMax = Math.ceil(rawMax / step) * step;
-
+    const mag = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const step = [1, 2, 2.5, 5, 10].map(s => s * mag).find(s => s >= roughStep) ?? mag;
+    const nMin = Math.floor(rawMin / step) * step;
+    const nMax = Math.ceil(rawMax / step) * step;
     const ticks: number[] = [];
-    for (let v = niceMin; v <= niceMax + step * 0.01; v += step) {
-      ticks.push(parseFloat(v.toFixed(10)));
-    }
-
-    return { points: rawPoints, min: niceMin, max: niceMax, yTicks: ticks };
+    for (let v = nMin; v <= nMax + step * 0.01; v += step) ticks.push(parseFloat(v.toFixed(10)));
+    return { points: raw, yTicks: ticks, min: nMin, max: nMax };
   }, [trades]);
 
-  const W = 800;
-  const H = 380;
-  const PAD_TOP = 16;
-  const PAD_BOTTOM = 44;
-  const PAD_LEFT = 80;
-  const PAD_RIGHT = 16;
-
-  const chartW = W - PAD_LEFT - PAD_RIGHT;
-  const chartH = H - PAD_TOP - PAD_BOTTOM;
   const range = max - min || 1;
+  const toX = (i: number) => PAD_L + (points.length > 1 ? (i / (points.length - 1)) * chartW : chartW / 2);
+  const toY = (v: number) => PAD_T + chartH - ((v - min) / range) * chartH;
 
-  const toX = useCallback((i: number) =>
-    PAD_LEFT + (points.length > 1 ? (i / (points.length - 1)) * chartW : chartW / 2),
-    [points.length, chartW]
-  );
-
-  const toY = useCallback((v: number) =>
-    PAD_TOP + chartH - ((v - min) / range) * chartH,
-    [min, range, chartH, PAD_TOP]
-  );
-
-  const computedPoints: Point[] = useMemo(() =>
+  const computed: Point[] = useMemo(() =>
     points.map(p => ({ ...p, x: toX(p.index), y: toY(p.cumPnl) })),
-    [points, toX, toY]
+    [points, width, min, range, chartW, chartH]
   );
 
-  if (computedPoints.length < 2) return null;
+  if (computed.length < 2) return null;
 
+  const last = computed[computed.length - 1];
+  const finalPnl = last.cumPnl;
+  const isPos = finalPnl >= 0;
+  const color = isPos ? "#10b981" : "#ef4444";
+  const fillStart = isPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)";
+  const fillEnd = "rgba(0,0,0,0)";
   const zeroY = toY(0);
-  const finalPnl = computedPoints[computedPoints.length - 1].cumPnl;
-  const isPositive = finalPnl >= 0;
-  const lineColor = isPositive ? "#0f7b6c" : "#eb5757";
-  const fillColorStart = isPositive ? "rgba(15,123,108,0.18)" : "rgba(235,87,87,0.18)";
-  const fillColorEnd = isPositive ? "rgba(15,123,108,0)" : "rgba(235,87,87,0)";
+  const pathD = smoothPath(computed);
+  const fillD = `${pathD} L${last.x},${zeroY} L${computed[0].x},${zeroY} Z`;
 
-  const pathD = computedPoints.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-  const last = computedPoints[computedPoints.length - 1];
-  const first = computedPoints[0];
-  const fillD = `${pathD} L${last.x.toFixed(1)},${zeroY.toFixed(1)} L${first.x.toFixed(1)},${zeroY.toFixed(1)} Z`;
-
-  const gradientId = `eq-grad-${isPositive ? "pos" : "neg"}`;
-
-  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const svg = svgRef.current;
-    if (!svg || computedPoints.length === 0) return;
-    const rect = svg.getBoundingClientRect();
-    const scaleX = W / rect.width;
-    const mouseX = (e.clientX - rect.left) * scaleX;
-    // Find nearest point
-    let nearest = computedPoints[0];
-    let minDist = Math.abs(mouseX - nearest.x);
-    for (const p of computedPoints) {
-      const d = Math.abs(mouseX - p.x);
-      if (d < minDist) { minDist = d; nearest = p; }
-    }
-    setTooltip({ x: nearest.x, y: nearest.y, point: nearest });
+  const fmtV = (v: number) => {
+    const abs = Math.abs(v);
+    const s = abs >= 1000 ? `$${(abs / 1000).toFixed(1)}k` : `$${abs.toFixed(0)}`;
+    return v < 0 ? `-${s}` : s;
   };
 
-  const fmtPnl = (v: number) => `${v >= 0 ? "+" : ""}$${Math.abs(v).toFixed(2)}`;
-  const fmtTick = (v: number) => {
-    if (Math.abs(v) >= 1000) return `$${(v / 1000).toFixed(1)}k`;
-    return `$${v.toFixed(0)}`;
+  // X-axis labels: pick up to 5 evenly spaced
+  const xCount = Math.min(5, computed.length);
+  const xIndices = Array.from({ length: xCount }, (_, i) => Math.round(i * (computed.length - 1) / (xCount - 1)));
+  const xLabels = [...new Set(xIndices)].map(i => computed[i]);
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * width;
+    let nearest = computed[0];
+    let minD = Math.abs(mx - nearest.x);
+    for (const p of computed) { const d = Math.abs(mx - p.x); if (d < minD) { minD = d; nearest = p; } }
+    setTooltip({ px: nearest.x, point: nearest });
   };
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "10px" }}>
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Equity Curve</span>
-        <div style={{ display: "flex", gap: "16px", alignItems: "baseline" }}>
-          <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{computedPoints.length} trades</span>
-          <span style={{ fontSize: "16px", fontWeight: 700, color: lineColor }}>{fmtPnl(finalPnl)}</span>
+    <div style={{ width: "100%" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+        <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Equity Curve</span>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{computed.length} trades</span>
+          <span style={{ fontSize: "15px", fontWeight: 700, color: color }}>{finalPnl >= 0 ? "+" : ""}{fmtV(finalPnl)}</span>
         </div>
       </div>
 
-      <div style={{ border: "1px solid var(--border-color)", borderRadius: "10px", overflow: "hidden", backgroundColor: "var(--bg-secondary)", position: "relative" }}>
+      {/* Chart */}
+      <div ref={containerRef} style={{ position: "relative", width: "100%", borderRadius: "8px", overflow: "hidden", backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)" }}>
         <svg
-          ref={svgRef}
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ width: "100%", display: "block", cursor: "crosshair" }}
+          width="100%"
+          height={H}
+          viewBox={`0 0 ${width} ${H}`}
+          preserveAspectRatio="none"
+          style={{ display: "block", cursor: "crosshair" }}
           onMouseMove={handleMouseMove}
           onMouseLeave={() => setTooltip(null)}
         >
           <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={fillColorStart} />
-              <stop offset="100%" stopColor={fillColorEnd} />
+            <linearGradient id="ec-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={fillStart} />
+              <stop offset="100%" stopColor={fillEnd} />
             </linearGradient>
-            <clipPath id="chart-clip">
-              <rect x={PAD_LEFT} y={PAD_TOP} width={chartW} height={chartH} />
-            </clipPath>
           </defs>
 
-          {/* Y-axis grid lines + labels */}
+          {/* Y grid lines */}
           {yTicks.map(tick => {
             const ty = toY(tick);
-            if (ty < PAD_TOP - 2 || ty > PAD_TOP + chartH + 2) return null;
+            if (ty < PAD_T - 2 || ty > PAD_T + chartH + 2) return null;
             const isZero = Math.abs(tick) < 0.001;
             return (
-              <g key={tick}>
-                <line
-                  x1={PAD_LEFT} y1={ty} x2={W - PAD_RIGHT} y2={ty}
-                  stroke={isZero ? "var(--text-secondary)" : "var(--border-color)"}
-                  strokeWidth={isZero ? 1 : 0.5}
-                  strokeDasharray={isZero ? "none" : "3 4"}
-                  opacity={isZero ? 0.5 : 0.8}
-                />
-                <text
-                  x={PAD_LEFT - 6} y={ty + 4}
-                  textAnchor="end"
-                  fontSize="14"
-                  fill="var(--text-secondary)"
-                  fontFamily="var(--font-family)"
-                >
-                  {fmtTick(tick)}
-                </text>
-              </g>
+              <line key={tick}
+                x1={PAD_L} y1={ty} x2={width - PAD_R} y2={ty}
+                stroke={isZero ? "var(--text-secondary)" : "var(--border-color)"}
+                strokeWidth={isZero ? 1 : 0.5}
+                strokeDasharray={isZero ? undefined : "4 4"}
+                opacity={isZero ? 0.4 : 0.6}
+              />
             );
           })}
 
-          {/* Fill area */}
-          <path d={fillD} fill={`url(#${gradientId})`} clipPath="url(#chart-clip)" />
+          {/* Fill */}
+          <path d={fillD} fill="url(#ec-fill)" />
 
-          {/* Main line */}
-          <path d={pathD} fill="none" stroke={lineColor} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" clipPath="url(#chart-clip)" />
+          {/* Line */}
+          <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-          {/* Tooltip crosshair */}
+          {/* Crosshair + dot */}
           {tooltip && (
             <g>
-              <line
-                x1={tooltip.x} y1={PAD_TOP}
-                x2={tooltip.x} y2={PAD_TOP + chartH}
-                stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.6"
-              />
-              <circle cx={tooltip.x} cy={tooltip.y} r="5" fill={lineColor} stroke="var(--bg-secondary)" strokeWidth="2" />
+              <line x1={tooltip.px} y1={PAD_T} x2={tooltip.px} y2={PAD_T + chartH}
+                stroke="var(--text-secondary)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
+              <circle cx={tooltip.px} cy={tooltip.point.y} r="5" fill={color} stroke="var(--bg-color)" strokeWidth="2" />
             </g>
           )}
 
-          {/* End dot (always visible) */}
-          {!tooltip && (
-            <circle cx={last.x} cy={last.y} r="4" fill={lineColor} stroke="var(--bg-secondary)" strokeWidth="2" />
-          )}
-
-          {/* X-axis baseline */}
-          <line
-            x1={PAD_LEFT} y1={PAD_TOP + chartH}
-            x2={W - PAD_RIGHT} y2={PAD_TOP + chartH}
-            stroke="var(--border-color)" strokeWidth="0.5" opacity="0.8"
-          />
-
-          {/* X-axis date labels */}
-          {(() => {
-            const count = Math.min(6, computedPoints.length);
-            const indices = Array.from({ length: count }, (_, i) =>
-              Math.round(i * (computedPoints.length - 1) / (count - 1))
-            );
-            // deduplicate
-            const unique = [...new Set(indices)];
-            return unique.map(idx => {
-              const p = computedPoints[idx];
-              return (
-                <text
-                  key={idx}
-                  x={p.x}
-                  y={PAD_TOP + chartH + 22}
-                  textAnchor="middle"
-                  fontSize="13"
-                  fill="var(--text-secondary)"
-                  fontFamily="var(--font-family)"
-                >
-                  {format(new Date(p.date), "MMM d")}
-                </text>
-              );
-            });
-          })()}
+          {/* End dot */}
+          {!tooltip && <circle cx={last.x} cy={last.y} r="4" fill={color} stroke="var(--bg-color)" strokeWidth="2" />}
         </svg>
 
-        {/* Tooltip box — always clamped inside the container */}
+        {/* Y-axis labels — HTML overlay, always readable */}
+        <div style={{ position: "absolute", top: 0, left: 0, height: H, width: PAD_L, pointerEvents: "none" }}>
+          {yTicks.map(tick => {
+            const ty = toY(tick);
+            if (ty < PAD_T - 2 || ty > PAD_T + chartH + 2) return null;
+            return (
+              <div key={tick} style={{
+                position: "absolute", right: "6px",
+                top: ty - 8,
+                fontSize: "11px", color: "var(--text-secondary)",
+                textAlign: "right", whiteSpace: "nowrap", lineHeight: 1,
+              }}>
+                {fmtV(tick)}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* X-axis labels — HTML overlay */}
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: PAD_B, pointerEvents: "none" }}>
+          {xLabels.map((p, i) => {
+            const pct = ((p.x - PAD_L) / chartW) * 100;
+            const anchor = i === 0 ? "left" : i === xLabels.length - 1 ? "right" : "center";
+            return (
+              <div key={p.index} style={{
+                position: "absolute",
+                left: anchor === "right" ? undefined : `${pct}%`,
+                right: anchor === "right" ? "0" : undefined,
+                transform: anchor === "center" ? "translateX(-50%)" : anchor === "left" ? "translateX(0)" : undefined,
+                bottom: "6px",
+                fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap",
+              }}>
+                {format(new Date(p.date), "MMM d")}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tooltip box */}
         {tooltip && (() => {
           const p = tooltip.point;
-          const isWin = p.tradePnl >= 0;
-          const svgEl = svgRef.current;
-          const svgWidth = svgEl?.getBoundingClientRect().width ?? W;
-          const pxX = (tooltip.x / W) * svgWidth;
-          const tooltipW = 150;
-          const flipLeft = pxX > svgWidth - tooltipW - 16;
+          const pct = ((tooltip.px - PAD_L) / chartW) * 100;
+          const flipLeft = pct > 60;
           return (
             <div style={{
-              position: "absolute",
-              top: "8px",
-              left: flipLeft ? undefined : `${Math.min(pxX + 10, svgWidth - tooltipW - 8)}px`,
-              right: flipLeft ? `${svgWidth - pxX + 10}px` : undefined,
+              position: "absolute", top: "8px",
+              left: flipLeft ? undefined : `calc(${pct}% + 12px)`,
+              right: flipLeft ? `calc(${100 - pct}% + 12px)` : undefined,
               backgroundColor: "var(--bg-color)",
               border: "1px solid var(--border-color)",
-              borderRadius: "8px",
-              padding: "8px 12px",
-              fontSize: "12px",
-              pointerEvents: "none",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              width: `${tooltipW}px`,
-              zIndex: 10,
+              borderRadius: "8px", padding: "8px 12px",
+              fontSize: "12px", pointerEvents: "none",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2)",
+              minWidth: "140px", zIndex: 20,
             }}>
               <div style={{ color: "var(--text-secondary)", marginBottom: "5px", fontSize: "11px" }}>
                 {format(new Date(p.date), "MMM d, yyyy")}
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "2px" }}>
-                <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>Trade</span>
-                <span style={{ fontWeight: 600, color: isWin ? "#0f7b6c" : "#eb5757", fontSize: "12px" }}>{fmtPnl(p.tradePnl)}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                <span style={{ color: "var(--text-secondary)" }}>Trade</span>
+                <span style={{ fontWeight: 600, color: p.tradePnl >= 0 ? "#10b981" : "#ef4444" }}>
+                  {p.tradePnl >= 0 ? "+" : ""}{fmtV(p.tradePnl)}
+                </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--text-secondary)", fontSize: "11px" }}>Total</span>
-                <span style={{ fontWeight: 700, color: p.cumPnl >= 0 ? "#0f7b6c" : "#eb5757", fontSize: "12px" }}>{fmtPnl(p.cumPnl)}</span>
+                <span style={{ color: "var(--text-secondary)" }}>Total</span>
+                <span style={{ fontWeight: 700, color: p.cumPnl >= 0 ? "#10b981" : "#ef4444" }}>
+                  {p.cumPnl >= 0 ? "+" : ""}{fmtV(p.cumPnl)}
+                </span>
               </div>
             </div>
           );
