@@ -170,13 +170,6 @@ export default async function Dashboard() {
           label="Total Trades" 
           value={totalTrades.toString()} 
         />
-        {currentStreak > 0 && streakType && (
-          <StatTile
-            label="Current Streak"
-            value={`${currentStreak} day${currentStreak !== 1 ? "s" : ""}`}
-            sub={<span style={{ color: streakType === "win" ? "#0f7b6c" : "#eb5757" }}>{streakType === "win" ? "🔥 Win streak" : "📉 Loss streak"}</span>}
-          />
-        )}
       </div>
 
       {/* Main Grid: equity curve left, recent trades right */}

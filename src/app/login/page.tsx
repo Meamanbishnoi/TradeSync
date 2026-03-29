@@ -93,6 +93,12 @@ function LoginForm() {
         <button type="submit" className="notion-button notion-button-primary" style={{ padding: "10px", marginTop: "2px" }}>
           Sign In
         </button>
+        <p style={{ textAlign: "center", fontSize: "12px", color: "var(--text-secondary)", margin: "4px 0 0" }}>
+          Forgot your password?{" "}
+          <button type="button" onClick={() => signIn("google", { callbackUrl: "/" })} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent-color)", fontSize: "12px", padding: 0, textDecoration: "underline" }}>
+            Sign in with Google instead
+          </button>
+        </p>
       </form>
 
       <p style={{ textAlign: "center", marginTop: "20px", fontSize: "13px", color: "var(--text-secondary)" }}>
