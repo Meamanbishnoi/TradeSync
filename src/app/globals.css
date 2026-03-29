@@ -300,6 +300,11 @@ select.notion-input option {
   .dashboard-grid {
     grid-template-columns: 1fr !important;
   }
+
+  /* Equity curve card on mobile — give it enough height */
+  .equity-curve-card {
+    min-height: 280px !important;
+  }
 }
 
 @media (min-width: 769px) {

@@ -57,8 +57,8 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
   const W = 800;
   const H = 380;
   const PAD_TOP = 16;
-  const PAD_BOTTOM = 36;
-  const PAD_LEFT = 72;
+  const PAD_BOTTOM = 44;
+  const PAD_LEFT = 80;
   const PAD_RIGHT = 16;
 
   const chartW = W - PAD_LEFT - PAD_RIGHT;
@@ -163,7 +163,7 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
                 <text
                   x={PAD_LEFT - 6} y={ty + 4}
                   textAnchor="end"
-                  fontSize="11"
+                  fontSize="14"
                   fill="var(--text-secondary)"
                   fontFamily="var(--font-family)"
                 >
@@ -217,9 +217,9 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
                 <text
                   key={idx}
                   x={p.x}
-                  y={PAD_TOP + chartH + 18}
+                  y={PAD_TOP + chartH + 22}
                   textAnchor="middle"
-                  fontSize="10"
+                  fontSize="13"
                   fill="var(--text-secondary)"
                   fontFamily="var(--font-family)"
                 >
