@@ -12,14 +12,56 @@ export default async function Dashboard() {
 
   if (!session) {
     return (
-      <div style={{ textAlign: "center", marginTop: "120px" }}>
-        <h1 style={{ fontSize: "42px", marginBottom: "16px" }}>Your Trading Hub</h1>
-        <p style={{ color: "var(--text-secondary)", marginBottom: "32px", fontSize: "20px" }}>
-          A minimalist space to journalise every trade, track emotions, and improve edge.
-        </p>
-        <Link href="/login" className="notion-button notion-button-primary" style={{ padding: "10px 20px", fontSize: "18px" }}>
-          Get Started
-        </Link>
+      <div style={{ maxWidth: "900px", margin: "0 auto", paddingBottom: "80px" }}>
+        {/* Hero */}
+        <div style={{ textAlign: "center", padding: "72px 24px 56px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "4px 12px", borderRadius: "20px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "24px", fontWeight: 500 }}>
+            <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "#10b981", display: "inline-block" }} />
+            Built for serious traders
+          </div>
+          <h1 style={{ fontSize: "clamp(36px, 6vw, 60px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, margin: "0 0 20px" }}>
+            Your trading journal,<br />
+            <span style={{ color: "#10b981" }}>done right.</span>
+          </h1>
+          <p style={{ fontSize: "18px", color: "var(--text-secondary)", maxWidth: "520px", margin: "0 auto 36px", lineHeight: 1.7 }}>
+            Log trades, track your edge, and review your psychology — all in one clean, fast journal built for active traders.
+          </p>
+          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="/register" className="notion-button notion-button-primary" style={{ padding: "12px 28px", fontSize: "15px", fontWeight: 600, borderRadius: "8px" }}>
+              Get Started Free
+            </a>
+            <a href="/login" className="notion-button" style={{ padding: "12px 28px", fontSize: "15px", borderRadius: "8px" }}>
+              Sign In
+            </a>
+          </div>
+        </div>
+
+        {/* Feature grid */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "16px", padding: "0 16px", marginBottom: "56px" }}>
+          {[
+            { icon: "📈", title: "Equity Curve", desc: "Visualize your cumulative P&L over time with a smooth, interactive chart." },
+            { icon: "🗓️", title: "Calendar Heatmap", desc: "See your best and worst trading days at a glance with color-coded intensity." },
+            { icon: "📊", title: "Deep Analytics", desc: "Win rate, avg RRR, profit factor, best/worst day — all calculated automatically." },
+            { icon: "🧠", title: "Psychology Tracking", desc: "Log your emotions and mindset for every trade to identify behavioral patterns." },
+            { icon: "📸", title: "Screenshot Uploads", desc: "Attach chart screenshots to each trade for a complete visual review." },
+            { icon: "🔒", title: "Private & Secure", desc: "Your data is yours. Each account is fully isolated with secure authentication." },
+          ].map(f => (
+            <div key={f.title} style={{ padding: "20px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px" }}>
+              <div style={{ fontSize: "28px", marginBottom: "10px" }}>{f.icon}</div>
+              <div style={{ fontWeight: 600, fontSize: "15px", marginBottom: "6px" }}>{f.title}</div>
+              <div style={{ fontSize: "13px", color: "var(--text-secondary)", lineHeight: 1.6 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA strip */}
+        <div style={{ textAlign: "center", padding: "40px 24px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "16px", margin: "0 16px" }}>
+          <h2 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 10px" }}>Ready to improve your trading?</h2>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: "0 0 24px" }}>Free to use. No credit card required.</p>
+          <a href="/register" className="notion-button notion-button-primary" style={{ padding: "11px 28px", fontSize: "15px", fontWeight: 600, borderRadius: "8px" }}>
+            Start Journaling →
+          </a>
+        </div>
       </div>
     );
   }

@@ -12,7 +12,6 @@ function LoginForm() {
   const [error, setError] = useState("");
   const router = useRouter();
   const params = useSearchParams();
-  const verified = params.get("verified");
   const tokenError = params.get("error");
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -20,7 +19,7 @@ function LoginForm() {
     setError("");
     const res = await signIn("credentials", { email, password, redirect: false });
     if (res?.error) {
-      setError(res.error === "CredentialsSignin" ? "Invalid credentials. Please try again." : res.error);
+      setError(res.error === "CredentialsSignin" ? "Invalid email or password." : res.error);
     } else {
       router.push("/");
       router.refresh();
@@ -28,57 +27,34 @@ function LoginForm() {
   };
 
   return (
-    <div style={{ maxWidth: "400px", margin: "32px auto" }}>
-      <h1 style={{ fontSize: "30px", textAlign: "center", marginBottom: "24px" }}>Log in to your Journal</h1>
-
-      {verified && (
-        <div style={{ color: "#0f7b6c", fontSize: "14px", backgroundColor: "rgba(15,123,108,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
-          ✓ Email verified! You can now log in.
-        </div>
-      )}
-      {tokenError === "token-expired" && (
-        <div style={{ color: "#eb5757", fontSize: "14px", backgroundColor: "rgba(235,87,87,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
-          Verification link expired. Please register again to get a new link.
-        </div>
-      )}
-      {tokenError === "invalid-token" && (
-        <div style={{ color: "#eb5757", fontSize: "14px", backgroundColor: "rgba(235,87,87,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
-          Invalid verification link. Please try again.
-        </div>
-      )}
-
-      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-        {error && (
-          <div style={{ color: "#eb5757", fontSize: "14px", backgroundColor: "rgba(235,87,87,0.1)", padding: "8px", borderRadius: "4px" }}>{error}</div>
-        )}
-        <div>
-          <label style={{ display: "block", fontSize: "14px", color: "var(--text-secondary)", marginBottom: "4px" }}>Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="notion-input" required placeholder="Enter your email" />
-        </div>
-        <div>
-          <label style={{ display: "block", fontSize: "14px", color: "var(--text-secondary)", marginBottom: "4px" }}>Password</label>
-          <div style={{ position: "relative" }}>
-            <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className="notion-input" required placeholder="Enter your password" style={{ paddingRight: "40px" }} />
-            <button type="button" onClick={() => setShowPassword(p => !p)} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: "0", display: "flex", alignItems: "center" }}>
-              {showPassword ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              ) : (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              )}
-            </button>
+    <div style={{ maxWidth: "400px", margin: "48px auto", padding: "0 16px" }}>
+      <div style={{ textAlign: "center", marginBottom: "28px" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+          <div style={{ background: "var(--text-primary)", color: "var(--bg-color)", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+            </svg>
           </div>
+          <span style={{ fontWeight: 700, fontSize: "20px", letterSpacing: "-0.02em" }}>TradeSync</span>
         </div>
-        <button type="submit" className="notion-button notion-button-primary" style={{ marginTop: "4px", padding: "8px 16px" }}>Continue with Email</button>
-      </form>
-
-      <div style={{ display: "flex", alignItems: "center", margin: "20px 0", color: "var(--text-secondary)", fontSize: "13px", opacity: 0.6 }}>
-        <div style={{ flex: 1, height: "1px", backgroundColor: "var(--text-secondary)" }} />
-        <span style={{ margin: "0 10px" }}>OR</span>
-        <div style={{ flex: 1, height: "1px", backgroundColor: "var(--text-secondary)" }} />
+        <h1 style={{ fontSize: "24px", fontWeight: 700, margin: "0 0 6px" }}>Welcome back</h1>
+        <p style={{ color: "var(--text-secondary)", fontSize: "14px", margin: 0 }}>Log in to your trading journal</p>
       </div>
 
-      <button type="button" onClick={() => signIn("google", { callbackUrl: "/" })} className="notion-button" style={{ width: "100%", padding: "10px", display: "flex", justifyContent: "center", alignItems: "center", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)" }}>
-        <svg style={{ width: 18, height: 18, marginRight: 10 }} viewBox="0 0 24 24">
+      {tokenError === "token-expired" && (
+        <div style={{ color: "#eb5757", fontSize: "13px", backgroundColor: "rgba(235,87,87,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
+          Verification link expired. Please try again.
+        </div>
+      )}
+
+      {/* Google login */}
+      <button
+        type="button"
+        onClick={() => signIn("google", { callbackUrl: "/" })}
+        className="notion-button"
+        style={{ width: "100%", padding: "11px", display: "flex", justifyContent: "center", alignItems: "center", gap: "10px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)", fontSize: "14px", fontWeight: 500, marginBottom: "20px" }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
           <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -87,9 +63,42 @@ function LoginForm() {
         Continue with Google
       </button>
 
-      <div style={{ marginTop: "20px", textAlign: "center", fontSize: "14px", color: "var(--text-secondary)" }}>
-        Don&apos;t have an account? <Link href="/register" style={{ color: "var(--text-primary)", textDecoration: "underline" }}>Sign up</Link>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "20px", color: "var(--text-secondary)", fontSize: "12px" }}>
+        <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-color)" }} />
+        <span style={{ margin: "0 12px", opacity: 0.6 }}>or sign in with email</span>
+        <div style={{ flex: 1, height: "1px", backgroundColor: "var(--border-color)" }} />
       </div>
+
+      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        {error && (
+          <div style={{ color: "#eb5757", fontSize: "13px", backgroundColor: "rgba(235,87,87,0.1)", padding: "8px 10px", borderRadius: "6px" }}>{error}</div>
+        )}
+        <div>
+          <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Email</label>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="notion-input" required placeholder="you@example.com" />
+        </div>
+        <div>
+          <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Password</label>
+          <div style={{ position: "relative" }}>
+            <input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className="notion-input" required placeholder="Your password" style={{ paddingRight: "40px" }} />
+            <button type="button" onClick={() => setShowPassword(p => !p)} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", display: "flex" }}>
+              {showPassword ? (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              ) : (
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              )}
+            </button>
+          </div>
+        </div>
+        <button type="submit" className="notion-button notion-button-primary" style={{ padding: "10px", marginTop: "2px" }}>
+          Sign In
+        </button>
+      </form>
+
+      <p style={{ textAlign: "center", marginTop: "20px", fontSize: "13px", color: "var(--text-secondary)" }}>
+        New to TradeSync?{" "}
+        <Link href="/register" style={{ color: "var(--text-primary)", textDecoration: "underline" }}>Create account</Link>
+      </p>
     </div>
   );
 }
