@@ -8,9 +8,17 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="notion-button"
       title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-      style={{ padding: "6px 10px", fontSize: "16px", lineHeight: 1 }}
+      style={{
+        width: "32px", height: "32px",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: "none", border: "none", cursor: "pointer",
+        borderRadius: "6px", fontSize: "16px", lineHeight: 1,
+        color: "var(--text-secondary)",
+        transition: "background 0.1s",
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"}
+      onMouseLeave={e => e.currentTarget.style.background = "none"}
     >
       {theme === "light" ? "🌙" : "☀️"}
     </button>

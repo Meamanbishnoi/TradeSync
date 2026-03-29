@@ -31,28 +31,34 @@ export default function ProfileDropdown({ displayName }: ProfileDropdownProps) {
           display: "flex",
           alignItems: "center",
           gap: "8px",
-          padding: "6px 12px",
-          borderRadius: "6px",
-          border: "none",
+          padding: "4px 8px 4px 4px",
+          borderRadius: "20px",
+          border: "1px solid var(--border-color)",
           background: isOpen ? "var(--bg-hover)" : "transparent",
           cursor: "pointer",
-          fontSize: "16px",
+          fontSize: "14px",
           color: "var(--text-primary)",
           fontWeight: 500,
-          transition: "background-color 0.2s ease"
+          transition: "background-color 0.15s ease",
         }}
-        onMouseEnter={(e) => {
-          if (!isOpen) e.currentTarget.style.background = "var(--bg-hover)";
-        }}
-        onMouseLeave={(e) => {
-          if (!isOpen) e.currentTarget.style.background = "transparent";
-        }}
+        onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = "var(--bg-hover)"; }}
+        onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = "transparent"; }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-secondary)" }}>
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
+        {/* Avatar circle with initials */}
+        <div style={{
+          width: "26px", height: "26px", borderRadius: "50%",
+          backgroundColor: "var(--text-primary)", color: "var(--bg-color)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: "11px", fontWeight: 700, flexShrink: 0, letterSpacing: "0.02em",
+        }}>
+          {(displayName ?? "U").slice(0, 2).toUpperCase()}
+        </div>
+        <span style={{ fontSize: "13px", maxWidth: "80px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {displayName || "User"}
+        </span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: "var(--text-secondary)", flexShrink: 0 }}>
+          <polyline points="6 9 12 15 18 9"/>
         </svg>
-        {displayName || "User"}
       </button>
 
       {isOpen && (
