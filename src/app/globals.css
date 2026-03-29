@@ -258,15 +258,100 @@ select.notion-input option {
 /* Mobile table responsiveness */
 @media (max-width: 768px) {
   .trades-table-wrapper {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .trades-table-wrapper th,
   .trades-table-wrapper td {
-    padding: 8px 10px !important;
+    padding: 8px 8px !important;
   }
 
   .hide-mobile {
     display: none !important;
+  }
+}
+
+/* ── Mobile / Android ─────────────────────────────────── */
+@media (max-width: 640px) {
+
+  /* Nav */
+  nav {
+    padding: 10px 16px !important;
+  }
+
+  /* Container */
+  .container {
+    padding: 12px 16px !important;
+  }
+
+  /* Typography */
+  h1 { font-size: 24px !important; }
+  h2 { font-size: 18px !important; }
+  h3 { font-size: 16px !important; }
+
+  /* Trade form: single column on mobile */
+  .trade-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Profile / login max-width */
+  .mobile-full {
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* Buttons full width in forms */
+  .mobile-btn-full {
+    width: 100% !important;
+  }
+
+  /* Equity curve — reduce height on mobile */
+  svg[viewBox="0 0 800 220"] {
+    min-height: 140px;
+  }
+
+  /* Filter bar — stack vertically */
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Tab buttons — smaller padding */
+  .tab-btn {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+
+  /* Analytics modal */
+  .analytics-modal {
+    width: 95vw !important;
+    max-height: 90vh !important;
+    padding: 16px !important;
+  }
+
+  /* Inputs — prevent zoom on iOS/Android */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Trade detail grid */
+  .trade-detail-grid {
+    grid-template-columns: 100px 1fr !important;
+  }
+
+  /* Heatmap cells — smaller on mobile */
+  .heatmap-cell {
+    height: 44px !important;
+  }
+
+  /* Stats panel cards */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Page top margin */
+  .page-top {
+    margin-top: 12px !important;
   }
 }
