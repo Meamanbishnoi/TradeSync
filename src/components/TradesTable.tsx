@@ -5,9 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import AnalyticsModal from "@/components/AnalyticsModal";
-import EquityCurve from "@/components/EquityCurve";
-import CalendarHeatmap from "@/components/CalendarHeatmap";
-import StatsPanel from "@/components/StatsPanel";
 import { useToast } from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 
@@ -24,13 +21,9 @@ interface Trade {
   rating: number | null;
 }
 
-type Tab = "trades" | "heatmap" | "stats";
-
 export default function TradesTable({ initialTrades }: { initialTrades: Trade[] }) {
   const router = useRouter();
   const { showToast } = useToast();
-
-  const [activeTab, setActiveTab] = useState<Tab>("trades");
   const [timeFilter, setTimeFilter] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [customStart, setCustomStart] = useState("");
@@ -150,16 +143,8 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
   const SortIcon = ({ field }: { field: "date" | "pnl" | "contractSize" }) =>
     sortField === field ? <span style={{ fontSize: "11px" }}>{sortDirection === "asc" ? "▲" : "▼"}</span> : null;
 
-  const TABS: { id: Tab; label: string }[] = [
-    { id: "trades", label: "Trades" },
-    { id: "heatmap", label: "Heatmap" },
-    { id: "stats", label: "Stats" },
-  ];
-
   return (
     <div>
-      <EquityCurve trades={filteredTrades} />
-
       {/* Filter bar */}
       <div style={{ marginBottom: "16px" }}>
         {/* Row 1: Time filter + PNL summary */}
@@ -222,136 +207,106 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "2px solid var(--border-color)", marginBottom: "24px" }}>
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: "10px 24px",
-              fontSize: "14px",
-              fontWeight: activeTab === tab.id ? 600 : 400,
-              color: activeTab === tab.id ? "var(--text-primary)" : "var(--text-secondary)",
-              background: "none",
-              borderTop: "none",
-              borderLeft: "none",
-              borderRight: "none",
-              borderBottom: activeTab === tab.id ? "2px solid var(--text-primary)" : "2px solid transparent",
-              cursor: "pointer",
-              marginBottom: "-2px",
-            }}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <>
+        {selectedIds.size > 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", marginBottom: "12px" }}>
+            <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>{selectedIds.size} selected</span>
+            <button onClick={() => setIsBulkDeleteModalOpen(true)} disabled={isBulkDeleting} className="notion-button" style={{ fontSize: "14px", padding: "4px 12px", backgroundColor: "#eb5757", color: "#fff", border: "none" }}>
+              {isBulkDeleting ? "Deleting..." : "Delete Selected"}
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="notion-button" style={{ fontSize: "14px", padding: "4px 12px" }}>Clear</button>
+          </div>
+        )}
 
-      {activeTab === "heatmap" && <CalendarHeatmap trades={filteredTrades} />}
-      {activeTab === "stats" && <StatsPanel trades={filteredTrades} />}
-
-      {activeTab === "trades" && (
-        <>
-          {selectedIds.size > 0 && (
-            <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "10px 16px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "6px", marginBottom: "12px" }}>
-              <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>{selectedIds.size} selected</span>
-              <button onClick={() => setIsBulkDeleteModalOpen(true)} disabled={isBulkDeleting} className="notion-button" style={{ fontSize: "14px", padding: "4px 12px", backgroundColor: "#eb5757", color: "#fff", border: "none" }}>
-                {isBulkDeleting ? "Deleting..." : "Delete Selected"}
-              </button>
-              <button onClick={() => setSelectedIds(new Set())} className="notion-button" style={{ fontSize: "14px", padding: "4px 12px" }}>Clear</button>
+        {filteredTrades.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "64px", border: "1px dashed var(--border-color)", borderRadius: "8px", color: "var(--text-secondary)" }}>
+            <p>No trades found for this filter.</p>
+          </div>
+        ) : (
+          <>
+            <div className="trades-table-wrapper" style={{ overflowX: "auto", border: "1px solid var(--border-color)", borderRadius: "6px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "15px", backgroundColor: "var(--bg-color)" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border-color)", textAlign: "left", backgroundColor: "var(--bg-secondary)" }}>
+                    <th style={{ padding: "10px 12px", width: "36px" }}>
+                      <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll} style={{ cursor: "pointer" }} />
+                    </th>
+                    <th style={{ padding: "10px 12px", fontWeight: 500 }}>Instrument</th>
+                    <th style={{ padding: "10px 12px", fontWeight: 500, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("date")}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>Date <SortIcon field="date" /></div>
+                    </th>
+                    <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500 }}>Session</th>
+                    <th style={{ padding: "10px 12px", fontWeight: 500 }}>Dir</th>
+                    <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("contractSize")}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>Size <SortIcon field="contractSize" /></div>
+                    </th>
+                    <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500 }}>Setup</th>
+                    <th style={{ padding: "10px 12px", fontWeight: 500, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("pnl")}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>PNL <SortIcon field="pnl" /></div>
+                    </th>
+                    <th style={{ padding: "10px 12px" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTrades.map(trade => {
+                    const isWin = trade.pnl >= 0;
+                    const isSelected = selectedIds.has(trade.id);
+                    return (
+                      <tr key={trade.id} className="notion-table-row" style={{ borderBottom: "1px solid var(--border-color)", backgroundColor: isSelected ? "var(--bg-hover)" : undefined }}>
+                        <td style={{ padding: "10px 12px" }}>
+                          <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(trade.id)} style={{ cursor: "pointer" }} onClick={e => e.stopPropagation()} />
+                        </td>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", fontWeight: 600, display: "block" }}>{trade.instrument}</Link>
+                        </td>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "inherit" }}>{format(new Date(trade.date), "MM/dd/yyyy")}</Link>
+                        </td>
+                        <td className="hide-mobile" style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "var(--text-secondary)" }}>{trade.session || "-"}</Link>
+                        </td>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block" }}>
+                            <span style={{ padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)", fontSize: "13px", color: "var(--text-secondary)" }}>{trade.direction}</span>
+                          </Link>
+                        </td>
+                        <td className="hide-mobile" style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "inherit" }}>{trade.contractSize || "-"}</Link>
+                        </td>
+                        <td className="hide-mobile" style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "inherit" }}>{trade.setup || "-"}</Link>
+                        </td>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block" }}>
+                            <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", backgroundColor: isWin ? "rgba(15,123,108,0.1)" : "rgba(235,87,87,0.1)", padding: "3px 7px", borderRadius: "4px", fontWeight: 500, fontSize: "14px" }}>
+                              {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
+                            </span>
+                          </Link>
+                        </td>
+                        <td style={{ padding: "10px 8px" }}>
+                          <button onClick={() => handleDuplicate(trade.id)} disabled={isDuplicating === trade.id} title="Duplicate trade" className="notion-button" style={{ fontSize: "12px", padding: "3px 8px", opacity: isDuplicating === trade.id ? 0.6 : 1 }}>
+                            {isDuplicating === trade.id ? "..." : "Copy"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
 
-          {filteredTrades.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "64px", border: "1px dashed var(--border-color)", borderRadius: "8px", color: "var(--text-secondary)" }}>
-              <p>No trades found for this filter.</p>
-            </div>
-          ) : (
-            <>
-              <div className="trades-table-wrapper" style={{ overflowX: "auto", border: "1px solid var(--border-color)", borderRadius: "6px" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "15px", backgroundColor: "var(--bg-color)" }}>
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--border-color)", textAlign: "left", backgroundColor: "var(--bg-secondary)" }}>
-                      <th style={{ padding: "10px 12px", width: "36px" }}>
-                        <input type="checkbox" checked={allPageSelected} onChange={toggleSelectAll} style={{ cursor: "pointer" }} />
-                      </th>
-                      <th style={{ padding: "10px 12px", fontWeight: 500 }}>Instrument</th>
-                      <th style={{ padding: "10px 12px", fontWeight: 500, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("date")}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>Date <SortIcon field="date" /></div>
-                      </th>
-                      <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500 }}>Session</th>
-                      <th style={{ padding: "10px 12px", fontWeight: 500 }}>Dir</th>
-                      <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("contractSize")}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>Size <SortIcon field="contractSize" /></div>
-                      </th>
-                      <th className="hide-mobile" style={{ padding: "10px 12px", fontWeight: 500 }}>Setup</th>
-                      <th style={{ padding: "10px 12px", fontWeight: 500, cursor: "pointer", userSelect: "none" }} onClick={() => handleSort("pnl")}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>PNL <SortIcon field="pnl" /></div>
-                      </th>
-                      <th style={{ padding: "10px 12px" }}></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedTrades.map(trade => {
-                      const isWin = trade.pnl >= 0;
-                      const isSelected = selectedIds.has(trade.id);
-                      return (
-                        <tr key={trade.id} className="notion-table-row" style={{ borderBottom: "1px solid var(--border-color)", backgroundColor: isSelected ? "var(--bg-hover)" : undefined }}>
-                          <td style={{ padding: "10px 12px" }}>
-                            <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(trade.id)} style={{ cursor: "pointer" }} onClick={e => e.stopPropagation()} />
-                          </td>
-                          <td style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", fontWeight: 600, display: "block" }}>{trade.instrument}</Link>
-                          </td>
-                          <td style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "inherit" }}>{format(new Date(trade.date), "MM/dd/yyyy")}</Link>
-                          </td>
-                          <td className="hide-mobile" style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "var(--text-secondary)" }}>{trade.session || "-"}</Link>
-                          </td>
-                          <td style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block" }}>
-                              <span style={{ padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-secondary)", fontSize: "13px", color: "var(--text-secondary)" }}>{trade.direction}</span>
-                            </Link>
-                          </td>
-                          <td className="hide-mobile" style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "inherit" }}>{trade.contractSize || "-"}</Link>
-                          </td>
-                          <td className="hide-mobile" style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block", color: "inherit" }}>{trade.setup || "-"}</Link>
-                          </td>
-                          <td style={{ padding: 0 }}>
-                            <Link href={`/trade/${trade.id}`} style={{ padding: "10px 12px", display: "block" }}>
-                              <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", backgroundColor: isWin ? "rgba(15,123,108,0.1)" : "rgba(235,87,87,0.1)", padding: "3px 7px", borderRadius: "4px", fontWeight: 500, fontSize: "14px" }}>
-                                {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
-                              </span>
-                            </Link>
-                          </td>
-                          <td style={{ padding: "10px 8px" }}>
-                            <button onClick={() => handleDuplicate(trade.id)} disabled={isDuplicating === trade.id} title="Duplicate trade" className="notion-button" style={{ fontSize: "12px", padding: "3px 8px", opacity: isDuplicating === trade.id ? 0.6 : 1 }}>
-                              {isDuplicating === trade.id ? "..." : "Copy"}
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {pageSize !== "All" && totalPages > 1 && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px" }}>
-                  <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Page {currentPage} of {totalPages}</span>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="notion-button" style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>Previous</button>
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="notion-button" style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>Next</button>
-                  </div>
+            {pageSize !== "All" && totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "16px" }}>
+                <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Page {currentPage} of {totalPages}</span>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="notion-button" style={{ opacity: currentPage === 1 ? 0.5 : 1 }}>Previous</button>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="notion-button" style={{ opacity: currentPage === totalPages ? 0.5 : 1 }}>Next</button>
                 </div>
-              )}
-            </>
-          )}
-        </>
-      )}
+              </div>
+            )}
+          </>
+        )}
+      </>
 
       <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} trades={filteredTrades} />
 

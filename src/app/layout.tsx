@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { Providers } from "@/components/Providers";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
+import Sidebar from "@/components/Sidebar";
+import MobileNav from "@/components/MobileNav";
 
 export const dynamic = "force-dynamic";
 
@@ -63,46 +65,53 @@ export default async function RootLayout({
           })();
         `}} />
       </head>
-      <body>
+      <body style={{ margin: 0, padding: 0 }}>
         <Providers>
-          <nav style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            padding: '10px 16px', 
-            borderBottom: '1px solid var(--border-color)',
-            backgroundColor: 'var(--bg-color)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            gap: '8px',
-          }}>
-            <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', flexShrink: 0 }}>
-              <div style={{ background: 'var(--text-primary)', color: 'var(--bg-color)', width: '26px', height: '26px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 3v18h18" />
-                  <path d="m19 9-5 5-4-4-3 3" />
-                </svg>
+          <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+            <nav style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '10px 16px', 
+              borderBottom: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-color)',
+              flexShrink: 0,
+              zIndex: 10,
+              gap: '8px',
+            }}>
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', flexShrink: 0 }}>
+                <div style={{ background: 'var(--text-primary)', color: 'var(--bg-color)', width: '26px', height: '26px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3v18h18" />
+                    <path d="m19 9-5 5-4-4-3 3" />
+                  </svg>
+                </div>
+                <span style={{ fontWeight: 700, fontSize: "17px", color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  Trade<span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Sync</span>
+                </span>
+              </Link>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <ThemeToggle />
+                {session ? (
+                  <ProfileDropdown displayName={displayName ?? null} />
+                ) : (
+                  <>
+                    <Link href="/login" style={{ fontSize: "14px", color: 'var(--text-secondary)' }}>Login</Link>
+                    <Link href="/register" className="notion-button notion-button-primary" style={{ fontSize: "14px", padding: "6px 12px" }}>Sign up</Link>
+                  </>
+                )}
               </div>
-              <span style={{ fontWeight: 700, fontSize: "17px", color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-                Trade<span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Sync</span>
-              </span>
-            </Link>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <ThemeToggle />
-              {session ? (
-                <ProfileDropdown displayName={displayName ?? null} />
-              ) : (
-                <>
-                  <Link href="/login" style={{ fontSize: "14px", color: 'var(--text-secondary)' }}>Login</Link>
-                  <Link href="/register" className="notion-button notion-button-primary" style={{ fontSize: "14px", padding: "6px 12px" }}>Sign up</Link>
-                </>
-              )}
+            </nav>
+            <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+              {session && <Sidebar />}
+              <main className="main-content" style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+                <div className="container">
+                  {children}
+                </div>
+              </main>
             </div>
-          </nav>
-          <main className="container">
-            {children}
-          </main>
+          </div>
+          {session && <MobileNav />}
         </Providers>
       </body>
     </html>
