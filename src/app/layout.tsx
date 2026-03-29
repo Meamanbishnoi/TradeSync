@@ -8,6 +8,8 @@ import { Providers } from "@/components/Providers";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
 
+export const dynamic = "force-dynamic";
+
 export const viewport: Viewport = {
   themeColor: "#ffffff",
   width: "device-width",

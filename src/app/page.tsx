@@ -4,6 +4,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import TradesTable from "@/components/TradesTable";
 
+export const dynamic = "force-dynamic";
+
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
 
