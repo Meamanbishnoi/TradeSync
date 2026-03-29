@@ -46,25 +46,24 @@ export async function POST(req: Request) {
     }
 
     // 3. Extract and Restore Media Files to Vercel Blob
-    const imagesFolder = zip.folder("images");
     const newUrlMap: Record<string, string> = {};
 
-    if (imagesFolder) {
-      // Loop through all items inside the "images" folder
-      const filePathsInImages = Object.keys(zip.files).filter(name => name.startsWith("images/") && !zip.files[name].dir);
-      
-      for (const zipPath of filePathsInImages) {
-        const fileObj = zip.file(zipPath);
-        if (fileObj) {
-          try {
-            const rawFileName = path.basename(zipPath);
-            const fileBuffer = await fileObj.async("nodebuffer");
-            
-            // Upload to Vercel Blob instantly
-            const blob = await put(`tradesync/${rawFileName}`, fileBuffer, { access: 'public' });
-            newUrlMap[rawFileName] = blob.url;
-          } catch (e) {
-            console.error(`Failed to restore image to Cloud Blob: ${zipPath}`);
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const imagesFolder = zip.folder("images");
+      if (imagesFolder) {
+        const filePathsInImages = Object.keys(zip.files).filter(name => name.startsWith("images/") && !zip.files[name].dir);
+        for (const zipPath of filePathsInImages) {
+          const fileObj = zip.file(zipPath);
+          if (fileObj) {
+            try {
+              const rawFileName = path.basename(zipPath);
+              const fileBuffer = await fileObj.async("nodebuffer");
+              const blob = await put(`tradesync/${rawFileName}`, fileBuffer, { access: 'public' });
+              newUrlMap[rawFileName] = blob.url;
+            } catch (e) {
+              console.error(`Failed to restore image: ${zipPath}`, e);
+              // non-fatal — continue without this image
+            }
           }
         }
       }
@@ -116,7 +115,8 @@ export async function POST(req: Request) {
 
       // In sqlite/postgres createMany allows pre-defined generic IDs.
       await tx.trade.createMany({
-        data: inserts
+        data: inserts,
+        skipDuplicates: true,
       });
     });
 

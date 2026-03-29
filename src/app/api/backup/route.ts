@@ -60,15 +60,11 @@ export async function GET() {
             if (!res.ok) throw new Error("Failed to fetch cloud image");
             const arrayBuf = await res.arrayBuffer();
             fileBuffer = Buffer.from(arrayBuf);
-          } else {
-            const absoluteFilePath = path.join(publicDir, "uploads", filename);
-            fileBuffer = await fs.readFile(absoluteFilePath);
+            imagesFolder.file(filename, fileBuffer);
           }
-          
-          imagesFolder.file(filename, fileBuffer);
+          // skip local /uploads/ paths — not available on Vercel
         } catch (e) {
           console.error(`Missing image file for backup: ${url}`);
-          // If a file is missing on disk but exists in DB, we skip it so the backup does not hard crash
         }
       }
     }
