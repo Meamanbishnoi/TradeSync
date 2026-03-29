@@ -55,7 +55,7 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
   }, [trades]);
 
   const W = 800;
-  const H = 280;
+  const H = 380;
   const PAD_TOP = 16;
   const PAD_BOTTOM = 36;
   const PAD_LEFT = 72;
