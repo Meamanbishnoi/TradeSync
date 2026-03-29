@@ -68,14 +68,14 @@ export default async function RootLayout({
               zIndex: 10,
               gap: '8px',
             }}>
-              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', flexShrink: 0 }}>
-                <div style={{ background: 'var(--text-primary)', color: 'var(--bg-color)', width: '26px', height: '26px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}>
+                <div style={{ background: 'var(--text-primary)', color: 'var(--bg-color)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M3 3v18h18" />
                     <path d="m19 9-5 5-4-4-3 3" />
                   </svg>
                 </div>
-                <span style={{ fontWeight: 700, fontSize: "17px", color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                <span style={{ fontWeight: 800, fontSize: "20px", color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
                   Trade<span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Sync</span>
                 </span>
               </Link>

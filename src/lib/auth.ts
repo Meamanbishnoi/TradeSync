@@ -57,13 +57,19 @@ export const authOptions: NextAuthOptions = {
           },
         });
         user.id = dbUser.id;
+        // Always use the DB name (may have been updated via profile settings)
+        user.name = dbUser.name ?? user.name;
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: sessionData }) {
       if (user) {
         token.id = user.id;
         token.name = user.name;
+      }
+      // On session update or if name is missing, fetch from DB
+      if (trigger === "update" && sessionData?.name) {
+        token.name = sessionData.name;
       }
       return token;
     },
