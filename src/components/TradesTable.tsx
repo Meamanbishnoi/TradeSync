@@ -154,11 +154,12 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
       <EquityCurve trades={filteredTrades} />
 
       {/* Filter bar */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "16px" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Time Period</label>
-            <select value={timeFilter} onChange={e => { setTimeFilter(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ width: "auto", padding: "6px 12px" }}>
+      <div style={{ marginBottom: "16px" }}>
+        {/* Row 1: Time filter + PNL summary */}
+        <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", marginBottom: "8px", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 140px", minWidth: "120px" }}>
+            <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Time Period</label>
+            <select value={timeFilter} onChange={e => { setTimeFilter(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px" }}>
               <option value="All">All Time</option>
               <option value="Today">Today</option>
               <option value="This Week">This Week</option>
@@ -166,65 +167,40 @@ export default function TradesTable({ initialTrades }: { initialTrades: Trade[] 
               <option value="Custom">Custom Range</option>
             </select>
           </div>
-          {timeFilter === "Custom" && (
-            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Start</label>
-                <input type="date" value={customStart} onChange={e => { setCustomStart(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ width: "auto", padding: "6px 12px" }} />
-              </div>
-              <span style={{ color: "var(--text-secondary)", marginTop: "16px" }}>-</span>
-              <div>
-                <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>End</label>
-                <input type="date" value={customEnd} onChange={e => { setCustomEnd(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ width: "auto", padding: "6px 12px" }} />
-              </div>
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
-          <button type="button" onClick={() => setIsAnalyticsOpen(true)} className="notion-button" style={{ padding: "6px 14px" }}>Analytics</button>
-          <button type="button" onClick={() => exportCsv(filteredTrades)} className="notion-button" style={{ padding: "6px 14px" }}>Export CSV</button>
-          <div style={{ height: "28px", width: "1px", backgroundColor: "var(--border-color)" }} />
-          <div style={{ textAlign: "right", fontSize: "15px" }}>
-            <span style={{ color: "var(--text-secondary)" }}>PNL: </span>
-            <span style={{ color: totalFilteredPnl >= 0 ? "#0f7b6c" : "#eb5757", fontWeight: 600 }}>
+          <div style={{ flex: "0 1 80px", minWidth: "70px" }}>
+            <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Per Page</label>
+            <select value={pageSize.toString()} onChange={e => { const val = e.target.value; setPageSize(val === "All" || val === "Custom" ? val : parseInt(val)); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px" }}>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="All">All</option>
+            </select>
+          </div>
+          <div style={{ marginLeft: "auto", textAlign: "right", fontSize: "14px", paddingBottom: "2px" }}>
+            <span style={{ color: totalFilteredPnl >= 0 ? "#0f7b6c" : "#eb5757", fontWeight: 700 }}>
               {totalFilteredPnl >= 0 ? "+" : ""}${totalFilteredPnl.toFixed(2)}
             </span>
-            <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{filteredTrades.length} trades</div>
+            <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{filteredTrades.length} trades</div>
           </div>
-          <div style={{ height: "28px", width: "1px", backgroundColor: "var(--border-color)" }} />
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Per Page</label>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <select 
-                value={pageSize.toString()} 
-                onChange={e => { 
-                  const val = e.target.value;
-                  setPageSize(val === "All" || val === "Custom" ? val : parseInt(val)); 
-                  setCurrentPage(1); 
-                }} 
-                className="notion-input" 
-                style={{ width: "auto", padding: "6px 12px" }}
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="All">All</option>
-                <option value="Custom">Custom</option>
-              </select>
-              {pageSize === "Custom" && (
-                <input 
-                  type="number" 
-                  min="1" 
-                  value={customPageSize} 
-                  onChange={e => { setCustomPageSize(Math.max(1, parseInt(e.target.value) || 1)); setCurrentPage(1); }}
-                  className="notion-input" 
-                  style={{ width: "70px", padding: "6px 12px" }} 
-                  placeholder="Count"
-                  title="Custom row count"
-                />
-              )}
+        </div>
+
+        {timeFilter === "Custom" && (
+          <div style={{ display: "flex", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 130px" }}>
+              <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Start</label>
+              <input type="date" value={customStart} onChange={e => { setCustomStart(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px" }} />
+            </div>
+            <div style={{ flex: "1 1 130px" }}>
+              <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>End</label>
+              <input type="date" value={customEnd} onChange={e => { setCustomEnd(e.target.value); setCurrentPage(1); }} className="notion-input" style={{ padding: "6px 10px", fontSize: "14px" }} />
             </div>
           </div>
+        )}
+
+        {/* Row 2: Action buttons */}
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button type="button" onClick={() => setIsAnalyticsOpen(true)} className="notion-button" style={{ padding: "6px 12px", fontSize: "13px", flex: "1" }}>Analytics</button>
+          <button type="button" onClick={() => exportCsv(filteredTrades)} className="notion-button" style={{ padding: "6px 12px", fontSize: "13px", flex: "1" }}>Export CSV</button>
         </div>
       </div>
 
