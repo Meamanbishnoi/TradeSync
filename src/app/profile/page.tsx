@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { useToast } from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { update: updateSession } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
@@ -73,6 +75,8 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error("Failed to update profile");
 
       showToast("Profile updated successfully", "success");
+      // Update the JWT session so the nav name reflects immediately
+      await updateSession({ name: formData.name });
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "An error occurred";
