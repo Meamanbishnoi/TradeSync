@@ -3,7 +3,6 @@ import "./globals.css";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { Providers } from "@/components/Providers";
 import ProfileDropdown from "@/components/ProfileDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -35,17 +34,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-
-  let displayName = session?.user?.email;
-  if (session?.user?.id) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { name: true, email: true }
-    });
-    if (dbUser) {
-      displayName = dbUser.name || dbUser.email;
-    }
-  }
+  const displayName = session?.user?.name || session?.user?.email || null;
 
   return (
     <html lang="en" data-theme="light" suppressHydrationWarning>

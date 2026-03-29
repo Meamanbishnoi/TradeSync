@@ -16,11 +16,12 @@ export default async function HeatmapPage() {
   const userId = session.user.id;
   const trades = await prisma.trade.findMany({
     where: { userId },
+    select: { date: true, pnl: true },
   });
 
-  const serializedTrades = trades.map((trade: any) => ({
-    ...trade,
+  const serializedTrades = trades.map(trade => ({
     date: trade.date.toISOString(),
+    pnl: trade.pnl,
   }));
 
   return (

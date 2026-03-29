@@ -26,12 +26,16 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    let timer: ReturnType<typeof setTimeout>;
     const ro = new ResizeObserver(entries => {
-      setWidth(entries[0].contentRect.width);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setWidth(entries[0].contentRect.width);
+      }, 100);
     });
     ro.observe(el);
     setWidth(el.clientWidth);
-    return () => ro.disconnect();
+    return () => { ro.disconnect(); clearTimeout(timer); };
   }, []);
 
   const H = 300;

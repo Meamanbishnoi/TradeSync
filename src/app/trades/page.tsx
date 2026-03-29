@@ -15,9 +15,14 @@ export default async function TradesPage() {
   const trades = await prisma.trade.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true, instrument: true, date: true, session: true,
+      direction: true, contractSize: true, setup: true,
+      pnl: true, notes: true, rating: true,
+    },
   });
 
-  const serializedTrades = trades.map((trade: any) => ({
+  const serializedTrades = trades.map(trade => ({
     ...trade,
     date: trade.date.toISOString(),
   }));

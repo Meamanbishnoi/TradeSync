@@ -67,10 +67,34 @@ export default async function Dashboard() {
   }
 
   const userId = session.user.id;
-  const trades = await prisma.trade.findMany({
-    where: { userId },
-    orderBy: { date: "asc" },
+
+  // Aggregate stats in DB — much faster than fetching all rows
+  const [aggResult, trades] = await Promise.all([
+    prisma.trade.aggregate({
+      where: { userId },
+      _count: { id: true },
+      _sum: { pnl: true },
+    }),
+    prisma.trade.findMany({
+      where: { userId },
+      orderBy: { date: "asc" },
+      select: { id: true, instrument: true, date: true, direction: true, pnl: true, setup: true },
+    }),
+  ]);
+
+  // Count wins/losses in JS from the lightweight select
+  let wins = 0, losses = 0, grossWin = 0, grossLoss = 0;
+  trades.forEach(t => {
+    if (t.pnl >= 0) { wins++; grossWin += t.pnl; }
+    else { losses++; grossLoss += Math.abs(t.pnl); }
   });
+
+  const totalTrades = aggResult._count.id;
+  const netPnl = aggResult._sum.pnl ?? 0;
+  const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+  const avgWin = wins > 0 ? grossWin / wins : 0;
+  const avgLoss = losses > 0 ? grossLoss / losses : 0;
+  const avgRRR = avgWin > 0 && avgLoss > 0 ? avgWin / avgLoss : 0;
 
   type SerializedTrade = Omit<typeof trades[0], "date"> & { date: string };
   const serializedTrades: SerializedTrade[] = trades.map(trade => ({
@@ -78,48 +102,10 @@ export default async function Dashboard() {
     date: trade.date.toISOString(),
   }));
 
-  // Calculations
-  const totalTrades = trades.length;
-  let wins = 0;
-  let losses = 0;
-  let grossWin = 0;
-  let grossLoss = 0;
-  let netPnl = 0;
-
-  trades.forEach(t => {
-    netPnl += t.pnl;
-    if (t.pnl >= 0) {
-      wins++;
-      grossWin += t.pnl;
-    } else {
-      losses++;
-      grossLoss += Math.abs(t.pnl);
-    }
-  });
-
-  const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-  const avgWin = wins > 0 ? grossWin / wins : 0;
-  const avgLoss = losses > 0 ? grossLoss / losses : 0;
-  const avgRRR = (avgWin > 0 && avgLoss > 0) ? (avgWin / avgLoss) : 0;
-
-  // Current win/loss streak (day-based)
-  const tradingDays = [...new Map(
-    trades.map(t => [t.date.toISOString().slice(0, 10), t])
-  ).entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  const dayPnls = tradingDays.map(([, t]) => t.pnl);
-  let currentStreak = 0;
-  let streakType: "win" | "loss" | null = null;
-  if (dayPnls.length > 0) {
-    streakType = dayPnls[dayPnls.length - 1] >= 0 ? "win" : "loss";
-    for (let i = dayPnls.length - 1; i >= 0; i--) {
-      const isWinDay = dayPnls[i] >= 0;
-      if ((streakType === "win" && isWinDay) || (streakType === "loss" && !isWinDay)) currentStreak++;
-      else break;
-    }
-  }
-
-  // For display, we want recent trades (descending)
-  const recentTrades = [...serializedTrades].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 6);
+  // Recent trades (descending)
+  const recentTrades = [...serializedTrades]
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 6);
 
   const StatTile = ({ label, value, sub, highlight }: { label: string, value: string, sub?: React.ReactNode, highlight?: boolean }) => (
     <div style={{ 
@@ -209,7 +195,7 @@ export default async function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {recentTrades.map((trade: any) => {
+                  {recentTrades.map((trade) => {
                     const isWin = trade.pnl >= 0;
                     return (
                       <tr key={trade.id} className="notion-table-row" style={{ borderBottom: "1px solid var(--border-color)" }}>
