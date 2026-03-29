@@ -43,6 +43,22 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // For Google OAuth, upsert the user in our DB
+      if (account?.provider === "google" && user.email) {
+        const dbUser = await prisma.user.upsert({
+          where: { email: user.email },
+          update: { name: user.name ?? undefined },
+          create: {
+            email: user.email,
+            name: user.name ?? null,
+            password: "", // no password for OAuth users
+          },
+        });
+        user.id = dbUser.id;
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
