@@ -116,16 +116,16 @@ export default async function Dashboard() {
       {/* Main Grid: equity curve left, recent trades right */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "32px", alignItems: "stretch" }} className="dashboard-grid">
         {/* Equity Curve card */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "16px 16px 8px", display: "flex", flexDirection: "column" }}>
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", minHeight: "340px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexShrink: 0 }}>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
             <Link href="/analytics" style={{ fontSize: "12px", color: "var(--accent-color)" }}>Full analytics →</Link>
           </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "stretch" }}>
             {trades.length > 1 ? (
               <EquityCurve trades={serializedTrades} />
             ) : (
-              <div style={{ height: "100%", minHeight: "120px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
                 Log more trades to see your curve.
               </div>
             )}
@@ -133,31 +133,48 @@ export default async function Dashboard() {
         </div>
 
         {/* Recent Trades card */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexShrink: 0 }}>
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column", minHeight: "340px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexShrink: 0 }}>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Recent Trades</span>
             <Link href="/trades" style={{ fontSize: "12px", color: "var(--accent-color)" }}>View all →</Link>
           </div>
           {recentTrades.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
-              {recentTrades.map((trade: any) => {
-                const isWin = trade.pnl >= 0;
-                return (
-                  <Link key={trade.id} href={`/trade/${trade.id}`} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "6px 8px", borderRadius: "6px", textDecoration: "none",
-                  }} className="notion-table-row">
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden" }}>
-                      <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--text-primary)", flexShrink: 0 }}>{trade.instrument}</span>
-                      <span style={{ fontSize: "12px", color: "var(--text-secondary)", flexShrink: 0 }}>{format(new Date(trade.date), "MMM d")}</span>
-                      <span style={{ padding: "1px 5px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "11px", color: "var(--text-secondary)", flexShrink: 0 }}>{trade.direction}</span>
-                    </div>
-                    <span style={{ color: isWin ? "#0f7b6c" : "#eb5757", fontWeight: 700, fontSize: "13px", flexShrink: 0, marginLeft: "8px" }}>
-                      {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
-                    </span>
-                  </Link>
-                );
-              })}
+            <div style={{ flex: 1, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
+                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Instrument</th>
+                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Date</th>
+                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Dir</th>
+                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "right", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>PNL</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentTrades.map((trade: any) => {
+                    const isWin = trade.pnl >= 0;
+                    return (
+                      <tr key={trade.id} className="notion-table-row" style={{ borderBottom: "1px solid var(--border-color)" }}>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px", fontWeight: 700, color: "var(--text-primary)" }}>{trade.instrument}</Link>
+                        </td>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px", color: "var(--text-secondary)" }}>{format(new Date(trade.date), "MMM d")}</Link>
+                        </td>
+                        <td style={{ padding: 0 }}>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px" }}>
+                            <span style={{ padding: "1px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "11px", color: "var(--text-secondary)" }}>{trade.direction}</span>
+                          </Link>
+                        </td>
+                        <td style={{ padding: 0, textAlign: "right" }}>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px", fontWeight: 700, color: isWin ? "#0f7b6c" : "#eb5757" }}>
+                            {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
