@@ -322,7 +322,10 @@ export default function EditTradePage() {
         message="You have unsaved changes. Are you sure you want to leave? Your unsaved data will be lost."
         confirmLabel="Leave Page"
         cancelLabel="Stay"
-        onConfirm={() => router.push(`/trade/${tradeId}`)}
+        onConfirm={() => {
+          setShowExitConfirm(false);
+          router.push(`/trade/${tradeId}`);
+        }}
         onCancel={() => setShowExitConfirm(false)}
         isDestructive={true}
       />
