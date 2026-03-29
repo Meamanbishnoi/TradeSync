@@ -52,7 +52,7 @@ export default async function TradeDetailPage({ params }: { params: Promise<{ id
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
       <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <Link href="/" style={{ color: "var(--text-secondary)", fontSize: "16px", textDecoration: "none" }}>← Back to trades</Link>
+          <Link href="/trades" style={{ color: "var(--text-secondary)", fontSize: "16px", textDecoration: "none" }}>← Back to trades</Link>
           <div style={{ display: "flex", gap: "8px" }}>
             {prevTradeId && <Link href={`/trade/${prevTradeId}`} className="notion-button" style={{ fontSize: "14px", padding: "4px 8px" }}>← Prev</Link>}
             {nextTradeId && <Link href={`/trade/${nextTradeId}`} className="notion-button" style={{ fontSize: "14px", padding: "4px 8px" }}>Next →</Link>}

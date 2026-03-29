@@ -185,13 +185,13 @@ export default async function Dashboard() {
           </div>
           {recentTrades.length > 0 ? (
             <div style={{ flex: 1, overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "15px" }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border-color)" }}>
-                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Instrument</th>
-                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Date</th>
-                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "left", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Dir</th>
-                    <th style={{ padding: "6px 8px", fontWeight: 500, color: "var(--text-secondary)", textAlign: "right", fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.04em" }}>PNL</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Instrument</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Date</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-secondary)", textAlign: "left", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Dir</th>
+                    <th style={{ padding: "8px 10px", fontWeight: 600, color: "var(--text-secondary)", textAlign: "right", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>PNL</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -200,18 +200,18 @@ export default async function Dashboard() {
                     return (
                       <tr key={trade.id} className="notion-table-row" style={{ borderBottom: "1px solid var(--border-color)" }}>
                         <td style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px", fontWeight: 700, color: "var(--text-primary)" }}>{trade.instrument}</Link>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "11px 10px", fontWeight: 700, color: "var(--text-primary)", fontSize: "15px" }}>{trade.instrument}</Link>
                         </td>
                         <td style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px", color: "var(--text-secondary)" }}>{format(new Date(trade.date), "MMM d")}</Link>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "11px 10px", color: "var(--text-secondary)", fontSize: "14px" }}>{format(new Date(trade.date), "MMM d")}</Link>
                         </td>
                         <td style={{ padding: 0 }}>
-                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px" }}>
-                            <span style={{ padding: "1px 6px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "11px", color: "var(--text-secondary)" }}>{trade.direction}</span>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "11px 10px" }}>
+                            <span style={{ padding: "2px 8px", borderRadius: "4px", border: "1px solid var(--border-color)", backgroundColor: "var(--bg-color)", fontSize: "13px", color: "var(--text-secondary)" }}>{trade.direction}</span>
                           </Link>
                         </td>
                         <td style={{ padding: 0, textAlign: "right" }}>
-                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "9px 8px", fontWeight: 700, color: isWin ? "#0f7b6c" : "#eb5757" }}>
+                          <Link href={`/trade/${trade.id}`} style={{ display: "block", padding: "11px 10px", fontWeight: 700, color: isWin ? "#0f7b6c" : "#eb5757", fontSize: "15px" }}>
                             {isWin ? "+" : ""}${trade.pnl.toFixed(2)}
                           </Link>
                         </td>
