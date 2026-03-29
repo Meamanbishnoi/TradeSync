@@ -34,11 +34,11 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
     return () => ro.disconnect();
   }, []);
 
-  const H = 220;
-  const PAD_T = 12;
-  const PAD_B = 32;
-  const PAD_L = 56;
-  const PAD_R = 12;
+  const H = 300;
+  const PAD_T = 10;
+  const PAD_B = 28;
+  const PAD_L = 52;
+  const PAD_R = 8;
   const chartW = Math.max(width - PAD_L - PAD_R, 1);
   const chartH = H - PAD_T - PAD_B;
 
@@ -175,7 +175,7 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
               <div key={tick} style={{
                 position: "absolute", right: "6px",
                 top: ty - 8,
-                fontSize: "11px", color: "var(--text-secondary)",
+                fontSize: "13px", color: "var(--text-secondary)",
                 textAlign: "right", whiteSpace: "nowrap", lineHeight: 1,
               }}>
                 {fmtV(tick)}
@@ -196,7 +196,7 @@ export default function EquityCurve({ trades }: { trades: Trade[] }) {
                 right: anchor === "right" ? "0" : undefined,
                 transform: anchor === "center" ? "translateX(-50%)" : anchor === "left" ? "translateX(0)" : undefined,
                 bottom: "6px",
-                fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap",
+                fontSize: "12px", color: "var(--text-secondary)", whiteSpace: "nowrap",
               }}>
                 {format(new Date(p.date), "MMM d")}
               </div>
