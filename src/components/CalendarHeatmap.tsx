@@ -142,18 +142,22 @@ function MonthGrid({
 
   return (
     <div>
-      {/* Header with nav */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {navLeft}
-          <span style={{ fontSize: "17px", fontWeight: 700, minWidth: "140px", textAlign: "center" }}>
-            {format(month, "MMMM yyyy")}
-          </span>
-          {navRight}
+      {/* Header with nav — two rows so it never overflows on mobile */}
+      <div style={{ marginBottom: "12px" }}>
+        {/* Row 1: arrows + month name */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {navLeft}
+            <span style={{ fontSize: "16px", fontWeight: 700 }}>
+              {format(month, "MMMM yyyy")}
+            </span>
+            {navRight}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{tradingDays} trading days</span>
-          <span style={{ fontSize: "15px", fontWeight: 700, color: monthPnl >= 0 ? "#0f7b6c" : "#eb5757" }}>
+        {/* Row 2: stats */}
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <span style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{tradingDays} trading day{tradingDays !== 1 ? "s" : ""}</span>
+          <span style={{ fontSize: "14px", fontWeight: 700, color: monthPnl >= 0 ? "#0f7b6c" : "#eb5757" }}>
             {monthPnl >= 0 ? "+" : ""}${monthPnl.toFixed(2)}
           </span>
         </div>
