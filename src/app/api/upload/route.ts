@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
@@ -20,29 +19,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "No file provided" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    
     // Generate unique filename
     const ext = file.name.split('.').pop() || 'png';
-    const filename = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    const filename = `tradesync/${crypto.randomBytes(16).toString('hex')}.${ext}`;
 
-    try {
-      await writeFile(path.join(uploadDir, filename), buffer);
-    } catch (e) {
-      // If directory doesn't exist
-      const fs = require('fs');
-      if (!fs.existsSync(uploadDir)){
-          fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      await writeFile(path.join(uploadDir, filename), buffer);
-    }
+    // Upload to Vercel Blob
+    const blob = await put(filename, file, { access: 'public' });
 
-    const fileUrl = `/uploads/${filename}`;
-
-    return NextResponse.json({ url: fileUrl }, { status: 201 });
+    return NextResponse.json({ url: blob.url }, { status: 201 });
   } catch (error) {
-    console.error(error);
+    console.error("Vercel Blob Upload Error:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

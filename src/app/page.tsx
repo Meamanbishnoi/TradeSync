@@ -21,7 +21,7 @@ export default async function Dashboard() {
     );
   }
 
-  const userId = (session.user as any).id;
+  const userId = session.user.id;
   const trades = await prisma.trade.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
@@ -33,14 +33,11 @@ export default async function Dashboard() {
   }));
 
   return (
-    <div style={{ marginTop: "40px" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "40px", paddingBottom: "16px", borderBottom: "1px solid var(--border-color)" }}>
-        <div>
-          <h1>Trades</h1>
-          <p style={{ color: "var(--text-secondary)" }}>
-            Lifetime Total: {trades.length} trades
-          </p>
-        </div>
+    <div style={{ marginTop: "16px" }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>
+          {trades.length} trades total
+        </p>
         <Link href="/trade/new" className="notion-button notion-button-primary" style={{ padding: "8px 16px" }}>
           + New Trade
         </Link>

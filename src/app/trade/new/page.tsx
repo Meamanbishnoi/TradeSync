@@ -1,17 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MultiImageUploader from "@/components/MultiImageUploader";
 import ComboBox from "@/components/ComboBox";
 import StarRating from "@/components/StarRating";
+import { useToast } from "@/components/Toast";
+import { POINT_MULTIPLIERS, DEFAULT_SESSIONS } from "@/lib/constants";
+
+function calcPnl(entry: string, exit: string, contracts: string, instrument: string, direction: string): string {
+  const e = parseFloat(entry);
+  const x = parseFloat(exit);
+  const c = parseFloat(contracts) || 1;
+  if (isNaN(e) || isNaN(x)) return "";
+
+  const multiplier = POINT_MULTIPLIERS[instrument.toUpperCase()];
+  if (multiplier) {
+    const points = direction === "Long" ? x - e : e - x;
+    return (points * multiplier * c).toFixed(2);
+  }
+  // Fallback: treat as forex/stock — pnl = diff * contracts
+  const diff = direction === "Long" ? x - e : e - x;
+  return (diff * c).toFixed(2);
+}
 
 export default function NewTradePage() {
   const router = useRouter();
+  const { showToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState("");
-  
+
   const [formData, setFormData] = useState({
     instrument: "",
     direction: "Long",
@@ -26,11 +44,12 @@ export default function NewTradePage() {
     notes: "",
     rating: 0,
   });
-  
+
   const [customInstruments, setCustomInstruments] = useState<string[]>([]);
   const [customSessions, setCustomSessions] = useState<string[]>([]);
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
 
   useEffect(() => {
     async function fetchPreferences() {
@@ -41,74 +60,77 @@ export default function NewTradePage() {
           if (data.customInstruments) setCustomInstruments(JSON.parse(data.customInstruments));
           if (data.customSessions) setCustomSessions(JSON.parse(data.customSessions));
         }
-      } catch (e) {}
+      } catch {}
     }
     fetchPreferences();
   }, []);
 
+  // Auto-calculate PNL when relevant fields change
+  useEffect(() => {
+    if (formData.entryPrice && formData.exitPrice) {
+      const auto = calcPnl(formData.entryPrice, formData.exitPrice, formData.contractSize, formData.instrument, formData.direction);
+      if (auto !== "") {
+        setFormData(prev => ({ ...prev, pnl: auto }));
+        setPnlAutoCalc(true);
+      }
+    }
+  }, [formData.entryPrice, formData.exitPrice, formData.contractSize, formData.instrument, formData.direction]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setError("");
 
     try {
       let uploadedUrls: string[] = [];
-
-      if (newFiles.length > 0) {
-        for (const file of newFiles) {
-          const fileData = new FormData();
-          fileData.append("file", file);
-          const uploadRes = await fetch("/api/upload", {
-            method: "POST",
-            body: fileData,
-          });
-
-          if (uploadRes.ok) {
-            const { url } = await uploadRes.json();
-            uploadedUrls.push(url);
-          } else {
-            throw new Error("Failed to upload an image");
-          }
+      for (const file of newFiles) {
+        const fileData = new FormData();
+        fileData.append("file", file);
+        const uploadRes = await fetch("/api/upload", { method: "POST", body: fileData });
+        if (uploadRes.ok) {
+          const { url } = await uploadRes.json();
+          uploadedUrls.push(url);
+        } else {
+          throw new Error("Failed to upload an image");
         }
       }
-
-      const imageUrls = [...existingUrls, ...uploadedUrls];
-
-      const tradeData = {
-        instrument: formData.instrument,
-        direction: formData.direction,
-        date: new Date(formData.date).toISOString(),
-        session: formData.session,
-        entryPrice: parseFloat(formData.entryPrice) || 0,
-        exitPrice: parseFloat(formData.exitPrice) || 0,
-        contractSize: formData.contractSize ? parseFloat(formData.contractSize) : null,
-        pnl: parseFloat(formData.pnl) || 0,
-        setup: formData.setup,
-        emotions: formData.emotions,
-        notes: formData.notes,
-        imageUrls,
-        rating: formData.rating > 0 ? formData.rating : null,
-      };
 
       const res = await fetch("/api/trades", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(tradeData),
+        body: JSON.stringify({
+          instrument: formData.instrument,
+          direction: formData.direction,
+          date: new Date(formData.date).toISOString(),
+          session: formData.session,
+          entryPrice: parseFloat(formData.entryPrice) || 0,
+          exitPrice: parseFloat(formData.exitPrice) || 0,
+          contractSize: formData.contractSize ? parseFloat(formData.contractSize) : null,
+          pnl: parseFloat(formData.pnl) || 0,
+          setup: formData.setup,
+          emotions: formData.emotions,
+          notes: formData.notes,
+          imageUrls: [...existingUrls, ...uploadedUrls],
+          rating: formData.rating > 0 ? formData.rating : null,
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to save trade");
 
+      showToast("Trade saved successfully", "success");
       router.push("/");
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "An error occurred");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      showToast(msg, "error");
       setIsSubmitting(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "pnl") setPnlAutoCalc(false);
+  }, []);
 
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
@@ -118,21 +140,15 @@ export default function NewTradePage() {
 
       <h1 style={{ fontSize: "38px", marginBottom: "32px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>New Trade</h1>
 
-      {error && (
-        <div style={{ color: "#eb5757", backgroundColor: "rgba(235, 87, 87, 0.1)", padding: "12px", borderRadius: "4px", marginBottom: "24px" }}>
-          {error}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-          
+
           <div>
             <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Instrument</label>
-            <ComboBox 
+            <ComboBox
               name="instrument"
-              value={formData.instrument} 
-              onChange={(val) => setFormData({ ...formData, instrument: val })}
+              value={formData.instrument}
+              onChange={(val) => setFormData(prev => ({ ...prev, instrument: val }))}
               options={customInstruments}
               placeholder="e.g. ES, NQ, EURUSD"
               required
@@ -141,10 +157,10 @@ export default function NewTradePage() {
 
           <div>
             <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Direction</label>
-            <ComboBox 
+            <ComboBox
               name="direction"
-              value={formData.direction} 
-              onChange={(val) => setFormData({ ...formData, direction: val as "Long" | "Short" })}
+              value={formData.direction}
+              onChange={(val) => setFormData(prev => ({ ...prev, direction: val }))}
               options={["Long", "Short"]}
               required
             />
@@ -157,11 +173,11 @@ export default function NewTradePage() {
 
           <div>
             <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Session</label>
-            <ComboBox 
+            <ComboBox
               name="session"
-              value={formData.session} 
-              onChange={(val) => setFormData({ ...formData, session: val })}
-              options={customSessions.length > 0 ? customSessions : ["London", "New York", "Asia"]}
+              value={formData.session}
+              onChange={(val) => setFormData(prev => ({ ...prev, session: val }))}
+              options={customSessions.length > 0 ? customSessions : DEFAULT_SESSIONS}
               placeholder="Select Session..."
             />
           </div>
@@ -182,7 +198,10 @@ export default function NewTradePage() {
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>PNL ($)</label>
+            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>
+              PNL ($)
+              {pnlAutoCalc && <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--accent-color)" }}>auto-calculated</span>}
+            </label>
             <input type="number" step="any" name="pnl" value={formData.pnl} onChange={handleChange} className="notion-input" required placeholder="Amount (sign auto-calculated)" />
           </div>
 
@@ -194,10 +213,7 @@ export default function NewTradePage() {
           <div>
             <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Trade Rating</label>
             <div style={{ marginTop: "8px" }}>
-              <StarRating 
-                rating={formData.rating} 
-                onChange={(val) => setFormData({ ...formData, rating: val })} 
-              />
+              <StarRating rating={formData.rating} onChange={(val) => setFormData(prev => ({ ...prev, rating: val }))} />
             </div>
           </div>
         </div>
@@ -206,36 +222,17 @@ export default function NewTradePage() {
 
         <div>
           <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Emotions</label>
-          <textarea 
-            name="emotions" 
-            value={formData.emotions} 
-            onChange={handleChange} 
-            className="notion-input" 
-            style={{ minHeight: "80px", resize: "vertical" }}
-            placeholder="How did you feel during this trade?"
-          />
+          <textarea name="emotions" value={formData.emotions} onChange={handleChange} className="notion-input" style={{ minHeight: "80px", resize: "vertical" }} placeholder="How did you feel during this trade?" />
         </div>
 
         <div>
           <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Notes</label>
-          <textarea 
-            name="notes" 
-            value={formData.notes} 
-            onChange={handleChange} 
-            className="notion-input" 
-            style={{ minHeight: "150px", resize: "vertical" }}
-            placeholder="Write your trade review here..."
-          />
+          <textarea name="notes" value={formData.notes} onChange={handleChange} className="notion-input" style={{ minHeight: "150px", resize: "vertical" }} placeholder="Write your trade review here..." />
         </div>
 
         <div>
-           <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Screenshots</label>
-           <MultiImageUploader 
-             existingUrls={existingUrls}
-             onExistingUrlsChange={setExistingUrls}
-             newFiles={newFiles}
-             onNewFilesChange={setNewFiles}
-           />
+          <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Screenshots</label>
+          <MultiImageUploader existingUrls={existingUrls} onExistingUrlsChange={setExistingUrls} newFiles={newFiles} onNewFilesChange={setNewFiles} />
         </div>
 
         <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
@@ -243,7 +240,6 @@ export default function NewTradePage() {
             {isSubmitting ? "Saving..." : "Save Trade"}
           </button>
         </div>
-
       </form>
     </div>
   );

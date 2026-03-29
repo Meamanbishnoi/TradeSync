@@ -1,5 +1,5 @@
-:root {
-  /* Notion Light Theme Colors */
+:root,
+[data-theme="light"] {
   --bg-color: #ffffff;
   --text-primary: #37352f;
   --text-secondary: rgba(55, 53, 47, 0.65);
@@ -11,9 +11,19 @@
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+[data-theme="dark"] {
+  --bg-color: #191919;
+  --text-primary: rgba(255, 255, 255, 0.81);
+  --text-secondary: rgba(255, 255, 255, 0.45);
+  --border-color: rgba(255, 255, 255, 0.13);
+  --bg-hover: rgba(255, 255, 255, 0.055);
+  --bg-secondary: #202020;
+  --accent-color: #2eaadc;
+  --shadow-sm: rgba(15, 15, 15, 0.2) 0px 0px 0px 1px, rgba(15, 15, 15, 0.2) 0px 2px 4px;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* Notion Dark Theme Colors */
+  :root:not([data-theme="light"]) {
     --bg-color: #191919;
     --text-primary: rgba(255, 255, 255, 0.81);
     --text-secondary: rgba(255, 255, 255, 0.45);
@@ -65,25 +75,53 @@ a {
 }
 
 /* Remove Number Input Arrows */
-input[type="number"]::-webkit-inner-spin-button, 
-input[type="number"]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 input[type="number"] {
+  -webkit-appearance: textfield;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
-/* Fix Date Picker Icon in Dark Mode */
+/* Date picker icon in dark mode */
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Subtle checkboxes matching the Notion vibe */
+input[type="checkbox"] {
+  accent-color: var(--text-secondary);
+  opacity: 0.5;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  transition: opacity 0.2s ease, transform 0.1s;
+}
+input[type="checkbox"]:hover {
+  opacity: 0.8;
+}
+input[type="checkbox"]:checked {
+  opacity: 1;
+  accent-color: #0f7b6c;
+}
+
 @media (prefers-color-scheme: dark) {
-  input[type="date"]::-webkit-calendar-picker-indicator {
+  :root:not([data-theme="light"]) input[type="date"]::-webkit-calendar-picker-indicator {
     filter: invert(1);
     opacity: 0.6;
     cursor: pointer;
     transition: opacity 0.2s ease;
-  }
-  input[type="date"]::-webkit-calendar-picker-indicator:hover {
-    opacity: 1;
   }
 }
 
@@ -119,7 +157,15 @@ h3 {
 
 @media (max-width: 768px) {
   .container {
-    padding: 24px;
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 22px;
   }
 }
 
@@ -162,6 +208,7 @@ select.notion-input option {
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   transition: background-color 0.1s ease;
+  white-space: nowrap;
 }
 
 .notion-button:hover {
@@ -206,4 +253,20 @@ select.notion-input option {
 
 .profile-link:hover {
   background-color: var(--bg-hover) !important;
+}
+
+/* Mobile table responsiveness */
+@media (max-width: 768px) {
+  .trades-table-wrapper {
+    font-size: 14px;
+  }
+
+  .trades-table-wrapper th,
+  .trades-table-wrapper td {
+    padding: 8px 10px !important;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
 }

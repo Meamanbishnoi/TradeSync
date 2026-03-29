@@ -15,7 +15,7 @@ export default async function TradeDetailPage({ params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const userId = (session.user as any).id;
+  const userId = session.user.id;
   const trade = await prisma.trade.findUnique({
     where: { id },
   });

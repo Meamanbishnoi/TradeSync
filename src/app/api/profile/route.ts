@@ -3,15 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
         customInstruments: true,
         customSessions: true,
         createdAt: true,
-      }
+      },
     });
 
     if (!user) {
@@ -39,11 +39,11 @@ export async function PUT(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user) {
+    if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
+    const userId = session.user.id;
     const { name, customInstruments, customSessions } = await req.json();
 
     const updatedUser = await prisma.user.update({
@@ -59,7 +59,7 @@ export async function PUT(req: Request) {
         email: true,
         customInstruments: true,
         customSessions: true,
-      }
+      },
     });
 
     return NextResponse.json(updatedUser);
