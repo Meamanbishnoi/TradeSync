@@ -114,36 +114,38 @@ export default async function Dashboard() {
       </div>
 
       {/* Main Grid: equity curve left, recent trades right */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "32px" }} className="dashboard-grid">
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "32px", alignItems: "stretch" }} className="dashboard-grid">
         {/* Equity Curve card */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px 20px 12px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "16px 16px 8px", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexShrink: 0 }}>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
             <Link href="/analytics" style={{ fontSize: "12px", color: "var(--accent-color)" }}>Full analytics →</Link>
           </div>
-          {trades.length > 1 ? (
-            <EquityCurve trades={serializedTrades} />
-          ) : (
-            <div style={{ height: "160px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
-              Log more trades to see your curve.
-            </div>
-          )}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {trades.length > 1 ? (
+              <EquityCurve trades={serializedTrades} />
+            ) : (
+              <div style={{ height: "100%", minHeight: "120px", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+                Log more trades to see your curve.
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recent Trades card */}
-        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+        <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "16px", display: "flex", flexDirection: "column" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", flexShrink: 0 }}>
             <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Recent Trades</span>
             <Link href="/trades" style={{ fontSize: "12px", color: "var(--accent-color)" }}>View all →</Link>
           </div>
           {recentTrades.length > 0 ? (
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "space-between" }}>
               {recentTrades.map((trade: any) => {
                 const isWin = trade.pnl >= 0;
                 return (
                   <Link key={trade.id} href={`/trade/${trade.id}`} style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "8px 10px", borderRadius: "6px", textDecoration: "none",
+                    padding: "6px 8px", borderRadius: "6px", textDecoration: "none",
                   }} className="notion-table-row">
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden" }}>
                       <span style={{ fontWeight: 700, fontSize: "13px", color: "var(--text-primary)", flexShrink: 0 }}>{trade.instrument}</span>
@@ -158,7 +160,7 @@ export default async function Dashboard() {
               })}
             </div>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "160px", color: "var(--text-secondary)", fontSize: "14px" }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
               No trades yet.
             </div>
           )}
