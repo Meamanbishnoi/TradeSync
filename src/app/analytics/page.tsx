@@ -26,9 +26,6 @@ export default async function AnalyticsPage() {
     <div style={{ paddingTop: "16px", paddingBottom: "64px" }}>
       <header style={{ marginBottom: "24px" }}>
         <h1 style={{ fontSize: "28px", margin: 0 }}>Analytics</h1>
-        <p style={{ color: "var(--text-secondary)", margin: 0, marginTop: "4px", fontSize: "14px" }}>
-          Deep dive into your performance metrics.
-        </p>
       </header>
 
       {trades.length === 0 ? (

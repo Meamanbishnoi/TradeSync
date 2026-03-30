@@ -104,10 +104,52 @@ function calcKpis(trades: Trade[]) {
 }
 
 export default function AnalyticsDashboard({ allTrades }: { allTrades: Trade[] }) {
-  const [filter, setFilter] = useState<FilterId>("all");
-  const [lastN, setLastN] = useState(20);
-  const [customStart, setCustomStart] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [customEnd, setCustomEnd] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [filter, setFilter] = useState<FilterId>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("analytics_filter") as FilterId | null;
+      if (saved && FILTERS.some(f => f.id === saved)) return saved;
+    }
+    return "all";
+  });
+  const [lastN, setLastN] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("analytics_last_n");
+      return saved ? parseInt(saved) : 20;
+    }
+    return 20;
+  });
+  const [customStart, setCustomStart] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("analytics_custom_start") ?? format(new Date(), "yyyy-MM-dd");
+    }
+    return format(new Date(), "yyyy-MM-dd");
+  });
+  const [customEnd, setCustomEnd] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("analytics_custom_end") ?? format(new Date(), "yyyy-MM-dd");
+    }
+    return format(new Date(), "yyyy-MM-dd");
+  });
+
+  const handleSetFilter = (f: FilterId) => {
+    setFilter(f);
+    localStorage.setItem("analytics_filter", f);
+  };
+
+  const handleSetLastN = (n: number) => {
+    setLastN(n);
+    localStorage.setItem("analytics_last_n", n.toString());
+  };
+
+  const handleSetCustomStart = (v: string) => {
+    setCustomStart(v);
+    localStorage.setItem("analytics_custom_start", v);
+  };
+
+  const handleSetCustomEnd = (v: string) => {
+    setCustomEnd(v);
+    localStorage.setItem("analytics_custom_end", v);
+  };
 
   const trades = useMemo(
     () => filterTrades(allTrades, filter, lastN, customStart, customEnd),
@@ -132,7 +174,7 @@ export default function AnalyticsDashboard({ allTrades }: { allTrades: Trade[] }
           {FILTERS.map(f => (
             <button
               key={f.id}
-              onClick={() => setFilter(f.id)}
+              onClick={() => handleSetFilter(f.id)}
               style={{
                 padding: "5px 14px",
                 fontSize: "13px",
@@ -157,7 +199,7 @@ export default function AnalyticsDashboard({ allTrades }: { allTrades: Trade[] }
             <label style={{ fontSize: "13px", color: "var(--text-secondary)" }}>Number of trades</label>
             <input
               type="number" min="1" max="500" value={lastN}
-              onChange={e => setLastN(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={e => handleSetLastN(Math.max(1, parseInt(e.target.value) || 1))}
               className="notion-input"
               style={{ width: "80px", padding: "5px 10px", fontSize: "13px" }}
             />
@@ -169,11 +211,11 @@ export default function AnalyticsDashboard({ allTrades }: { allTrades: Trade[] }
           <div style={{ marginTop: "12px", display: "flex", gap: "12px", flexWrap: "wrap", alignItems: "flex-end" }}>
             <div>
               <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Start</label>
-              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="notion-input" style={{ padding: "5px 10px", fontSize: "13px", width: "auto" }} />
+              <input type="date" value={customStart} onChange={e => handleSetCustomStart(e.target.value)} className="notion-input" style={{ padding: "5px 10px", fontSize: "13px", width: "auto" }} />
             </div>
             <div>
               <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>End</label>
-              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="notion-input" style={{ padding: "5px 10px", fontSize: "13px", width: "auto" }} />
+              <input type="date" value={customEnd} onChange={e => handleSetCustomEnd(e.target.value)} className="notion-input" style={{ padding: "5px 10px", fontSize: "13px", width: "auto" }} />
             </div>
           </div>
         )}
