@@ -24,9 +24,6 @@ export default async function AnalyticsPage() {
 
   return (
     <div style={{ paddingTop: "16px", paddingBottom: "64px" }}>
-      <header style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "28px", margin: 0 }}>Analytics</h1>
-      </header>
 
       {trades.length === 0 ? (
         <div style={{ textAlign: "center", padding: "64px", border: "1px dashed var(--border-color)", borderRadius: "8px", color: "var(--text-secondary)" }}>
