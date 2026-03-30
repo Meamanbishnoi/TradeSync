@@ -4,6 +4,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import EquityCurve from "@/components/EquityCurve";
 import { format } from "date-fns";
+import FloatingAddButton from "@/components/FloatingAddButton";
 
 export const dynamic = "force-dynamic";
 
@@ -125,18 +126,10 @@ export default async function Dashboard() {
 
   return (
     <div style={{ paddingTop: "16px", paddingBottom: "64px" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "32px", flexWrap: "wrap", gap: "16px" }}>
-        <div>
-          <h1 style={{ fontSize: "32px", margin: 0 }}>Dashboard</h1>
-          <p style={{ color: "var(--text-secondary)", margin: 0, marginTop: "4px" }}>Welcome back to your trading journal.</p>
-        </div>
-        <Link href="/trade/new" className="notion-button notion-button-primary" style={{ padding: "8px 16px" }}>
-          + New Trade
-        </Link>
-      </header>
+      <FloatingAddButton />
 
       {/* KPI Tiles */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "32px", marginTop: "8px" }}>
         <StatTile 
           label="Net PNL" 
           value={`${netPnl >= 0 ? '+' : ''}$${Math.abs(netPnl).toFixed(2)}`} 
