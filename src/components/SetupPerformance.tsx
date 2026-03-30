@@ -125,11 +125,11 @@ export default function SetupPerformance({ trades }: { trades: Trade[] }) {
                   <span style={{ fontSize: "13px", fontWeight: 700, color: pnlColor(s.netPnl) }}>{fmtPnl(s.netPnl)}</span>
                 </div>
               </div>
-              <div style={{ height: "8px", backgroundColor: "var(--border-color)", borderRadius: "4px", overflow: "hidden" }}>
+              <div style={{ height: "5px", backgroundColor: "var(--border-color)", borderRadius: "4px", overflow: "hidden" }}>
                 <div style={{
                   width: `${(Math.abs(s.netPnl) / maxAbs) * 100}%`,
                   height: "100%",
-                  backgroundColor: s.netPnl >= 0 ? "#0f7b6c" : "#eb5757",
+                  backgroundColor: s.netPnl >= 0 ? "rgba(15,123,108,0.5)" : "rgba(235,87,87,0.5)",
                   borderRadius: "4px",
                   transition: "width 0.4s ease",
                 }} />
