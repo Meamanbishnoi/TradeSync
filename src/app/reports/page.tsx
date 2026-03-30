@@ -6,6 +6,13 @@ import { useToast } from "@/components/Toast";
 
 type ReportType = "weekly" | "daily" | "custom" | "last";
 
+const TYPES: { id: ReportType; label: string; desc: string }[] = [
+  { id: "daily",   label: "Today",         desc: "Today's trades only" },
+  { id: "weekly",  label: "Weekly",        desc: "Full week summary" },
+  { id: "custom",  label: "Custom Range",  desc: "Pick a date range" },
+  { id: "last",    label: "Last N Trades", desc: "Most recent trades" },
+];
+
 export default function ReportsPage() {
   const { showToast } = useToast();
   const [reportType, setReportType] = useState<ReportType>("weekly");
@@ -30,11 +37,10 @@ export default function ReportsPage() {
     setIsGenerating(true);
     try {
       const range = getDateRange();
-      const params = new URLSearchParams();
+      const params = new URLSearchParams({ type: reportType });
       if (range.start) params.set("start", range.start);
       if (range.end) params.set("end", range.end);
-      if (range.last) params.set("last", range.last.toString());
-      params.set("type", reportType);
+      if ("last" in range && range.last) params.set("last", range.last.toString());
 
       const res = await fetch(`/api/reports/pdf?${params}`);
       if (!res.ok) throw new Error("Failed to generate report");
@@ -43,93 +49,107 @@ export default function ReportsPage() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `tradesync-report-${format(new Date(), "yyyy-MM-dd")}.pdf`;
+      a.download = `report-${format(new Date(), "yyyy-MM-dd")}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
       showToast("Report downloaded", "success");
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : "Error generating report", "error");
-    } finally { setIsGenerating(false); }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  const weekLabel = weekOffset === 0 ? "This Week" : weekOffset === 1 ? "Last Week" : `${weekOffset} weeks ago`;
+  const weekLabel = weekOffset === 0 ? "This week" : weekOffset === 1 ? "Last week" : `${weekOffset} weeks ago`;
 
   return (
-    <div style={{ maxWidth: "680px", margin: "0 auto", paddingTop: "16px", paddingBottom: "64px" }}>
-      <header style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontSize: "28px", margin: 0 }}>Reports</h1>
-        <p style={{ color: "var(--text-secondary)", margin: 0, marginTop: "4px", fontSize: "14px" }}>Generate a professional PDF report of your trading activity.</p>
-      </header>
-
-      <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-
-        {/* Report type selector */}
-        <div>
-          <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Report Type</label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-            {([
-              { id: "weekly", label: "📅 Weekly", desc: "Full week summary" },
-              { id: "daily", label: "📆 Today", desc: "Today's trades" },
-              { id: "custom", label: "🗓️ Custom Range", desc: "Pick start & end date" },
-              { id: "last", label: "🔢 Last N Trades", desc: "Most recent trades" },
-            ] as { id: ReportType; label: string; desc: string }[]).map(opt => (
-              <button key={opt.id} type="button" onClick={() => setReportType(opt.id)}
-                style={{
-                  padding: "12px 14px", borderRadius: "8px", textAlign: "left", cursor: "pointer",
-                  border: reportType === opt.id ? "2px solid var(--text-primary)" : "1px solid var(--border-color)",
-                  backgroundColor: reportType === opt.id ? "var(--bg-hover)" : "var(--bg-color)",
-                  transition: "all 0.1s",
-                }}>
-                <div style={{ fontSize: "14px", fontWeight: 600 }}>{opt.label}</div>
-                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>{opt.desc}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Options per type */}
-        {reportType === "weekly" && (
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px" }}>Select Week</label>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <button onClick={() => setWeekOffset(w => w + 1)} className="notion-button" style={{ padding: "4px 10px" }}>‹</button>
-              <span style={{ fontSize: "14px", fontWeight: 600, minWidth: "120px", textAlign: "center" }}>{weekLabel}</span>
-              <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0} className="notion-button" style={{ padding: "4px 10px", opacity: weekOffset === 0 ? 0.4 : 1 }}>›</button>
-            </div>
-          </div>
-        )}
-
-        {reportType === "custom" && (
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <div style={{ flex: "1 1 140px" }}>
-              <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Start Date</label>
-              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="notion-input" />
-            </div>
-            <div style={{ flex: "1 1 140px" }}>
-              <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>End Date</label>
-              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="notion-input" />
-            </div>
-          </div>
-        )}
-
-        {reportType === "last" && (
-          <div>
-            <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "4px" }}>Number of Trades</label>
-            <input type="number" min="1" max="200" value={lastN} onChange={e => setLastN(parseInt(e.target.value) || 10)}
-              className="notion-input" style={{ width: "120px" }} />
-          </div>
-        )}
-
-        {/* Preview info */}
-        <div style={{ padding: "12px 16px", backgroundColor: "var(--bg-color)", border: "1px solid var(--border-color)", borderRadius: "8px", fontSize: "13px", color: "var(--text-secondary)" }}>
-          The PDF will include: trade table, PNL summary, win rate, equity curve data, and the TradeSync logo.
-        </div>
-
-        <button onClick={generate} disabled={isGenerating} className="notion-button notion-button-primary"
-          style={{ padding: "12px", fontSize: "15px", fontWeight: 600, opacity: isGenerating ? 0.7 : 1 }}>
-          {isGenerating ? "Generating..." : "⬇ Download PDF Report"}
-        </button>
+    <div style={{ maxWidth: "520px", margin: "0 auto", paddingTop: "16px", paddingBottom: "64px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontSize: "26px", margin: 0, fontWeight: 700 }}>Reports</h1>
+        <p style={{ color: "var(--text-secondary)", margin: "4px 0 0", fontSize: "14px" }}>
+          Download a PDF summary of your trading activity.
+        </p>
       </div>
+
+      {/* Report type */}
+      <div style={{ marginBottom: "20px" }}>
+        <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px", fontWeight: 500 }}>Report type</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {TYPES.map(opt => (
+            <label
+              key={opt.id}
+              style={{
+                display: "flex", alignItems: "center", gap: "12px",
+                padding: "12px 14px",
+                border: "1px solid " + (reportType === opt.id ? "var(--text-primary)" : "var(--border-color)"),
+                borderRadius: "8px",
+                cursor: "pointer",
+                backgroundColor: reportType === opt.id ? "var(--bg-hover)" : "var(--bg-secondary)",
+                transition: "border-color 0.15s, background 0.15s",
+              }}
+            >
+              <input
+                type="radio"
+                name="reportType"
+                value={opt.id}
+                checked={reportType === opt.id}
+                onChange={() => setReportType(opt.id)}
+                style={{ accentColor: "var(--text-primary)", width: "15px", height: "15px", flexShrink: 0 }}
+              />
+              <div>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>{opt.label}</div>
+                <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "1px" }}>{opt.desc}</div>
+              </div>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Options */}
+      {reportType === "weekly" && (
+        <div style={{ marginBottom: "20px" }}>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "8px", fontWeight: 500 }}>Select week</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button onClick={() => setWeekOffset(w => w + 1)} className="notion-button" style={{ padding: "6px 12px" }}>‹</button>
+            <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", minWidth: "110px", textAlign: "center" }}>{weekLabel}</span>
+            <button onClick={() => setWeekOffset(w => Math.max(0, w - 1))} disabled={weekOffset === 0} className="notion-button" style={{ padding: "6px 12px", opacity: weekOffset === 0 ? 0.4 : 1 }}>›</button>
+          </div>
+        </div>
+      )}
+
+      {reportType === "custom" && (
+        <div style={{ marginBottom: "20px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 140px" }}>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "6px", fontWeight: 500 }}>Start date</p>
+            <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="notion-input" />
+          </div>
+          <div style={{ flex: "1 1 140px" }}>
+            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "6px", fontWeight: 500 }}>End date</p>
+            <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="notion-input" />
+          </div>
+        </div>
+      )}
+
+      {reportType === "last" && (
+        <div style={{ marginBottom: "20px" }}>
+          <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "6px", fontWeight: 500 }}>Number of trades</p>
+          <input
+            type="number" min="1" max="500" value={lastN}
+            onChange={e => setLastN(parseInt(e.target.value) || 10)}
+            className="notion-input" style={{ width: "100px" }}
+          />
+        </div>
+      )}
+
+      {/* Generate button */}
+      <button
+        onClick={generate}
+        disabled={isGenerating}
+        className="notion-button notion-button-primary"
+        style={{ width: "100%", padding: "12px", fontSize: "14px", fontWeight: 600, opacity: isGenerating ? 0.7 : 1 }}
+      >
+        {isGenerating ? "Generating PDF..." : "Download PDF Report"}
+      </button>
     </div>
   );
 }
