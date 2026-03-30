@@ -7,6 +7,9 @@ import {
 } from "date-fns";
 import EquityCurve from "@/components/EquityCurve";
 import StatsPanel from "@/components/StatsPanel";
+import DirectionalBreakdown from "@/components/DirectionalBreakdown";
+import ConsistencyMetrics from "@/components/ConsistencyMetrics";
+import SetupPerformance from "@/components/SetupPerformance";
 
 interface Trade {
   id: string;
@@ -248,7 +251,22 @@ export default function AnalyticsDashboard({ allTrades }: { allTrades: Trade[] }
             <EquityCurve trades={trades} />
           </div>
 
-          {/* Stats Panel */}
+          {/* Directional Breakdown */}
+          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
+            <DirectionalBreakdown trades={trades} />
+          </div>
+
+          {/* Consistency Metrics */}
+          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
+            <ConsistencyMetrics trades={trades} />
+          </div>
+
+          {/* Setup Performance */}
+          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
+            <SetupPerformance trades={trades} />
+          </div>
+
+          {/* Stats Panel (streaks, DOW, monthly) */}
           <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
             <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "16px" }}>Detailed Breakdown</div>
             <StatsPanel trades={trades} />

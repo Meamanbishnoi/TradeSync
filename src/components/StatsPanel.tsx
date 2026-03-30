@@ -6,6 +6,8 @@ import { format, startOfDay } from "date-fns";
 interface Trade {
   date: string;
   pnl: number;
+  direction?: string;
+  setup?: string | null;
 }
 
 const DOW_LABELS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];

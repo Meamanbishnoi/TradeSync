@@ -312,3 +312,9 @@ select.notion-input option {
     display: none !important;
   }
 }
+
+@media (max-width: 600px) {
+  .setup-table-wrapper {
+    display: none;
+  }
+}
