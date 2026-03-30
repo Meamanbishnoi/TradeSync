@@ -10,6 +10,7 @@ import StatsPanel from "@/components/StatsPanel";
 import DirectionalBreakdown from "@/components/DirectionalBreakdown";
 import ConsistencyMetrics from "@/components/ConsistencyMetrics";
 import SetupPerformance from "@/components/SetupPerformance";
+import InstrumentBreakdown from "@/components/InstrumentBreakdown";
 
 interface Trade {
   id: string;
@@ -264,6 +265,11 @@ export default function AnalyticsDashboard({ allTrades }: { allTrades: Trade[] }
           {/* Setup Performance */}
           <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
             <SetupPerformance trades={trades} />
+          </div>
+
+          {/* Instrument Breakdown */}
+          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "20px" }}>
+            <InstrumentBreakdown trades={trades} />
           </div>
 
           {/* Stats Panel (streaks, DOW, monthly) */}

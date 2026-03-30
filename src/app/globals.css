@@ -318,3 +318,9 @@ select.notion-input option {
     display: none;
   }
 }
+
+@media (max-width: 600px) {
+  .instrument-table-wrapper {
+    display: none;
+  }
+}
