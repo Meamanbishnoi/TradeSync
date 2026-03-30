@@ -124,28 +124,34 @@ export default function JournalPage() {
       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px" }}>
         <button
           onClick={() => setDate(format(subDays(new Date(date + "T12:00:00"), 1), "yyyy-MM-dd"))}
-          className="notion-button" style={{ padding: "6px 10px", fontSize: "16px" }}
+          className="notion-button" style={{ padding: "8px 12px", fontSize: "18px", flexShrink: 0 }}
         >‹</button>
 
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "10px", padding: "8px 14px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px" }}>
-          <input
-            type="date" value={date} onChange={e => setDate(e.target.value)}
-            className="notion-input"
-            style={{ border: "none", background: "none", padding: 0, width: "auto", fontSize: "14px", color: "var(--text-secondary)" }}
-          />
-          <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--text-primary)" }}>{displayDate}</span>
-          {isToday && (
-            <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "10px", backgroundColor: "#10b981", color: "#fff", fontWeight: 600 }}>Today</span>
-          )}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "2px", padding: "10px 14px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "8px", minWidth: 0 }}>
+          {/* Top row: date picker + Today badge */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              type="date" value={date} onChange={e => setDate(e.target.value)}
+              className="notion-input"
+              style={{ border: "none", background: "none", padding: 0, width: "auto", fontSize: "13px", color: "var(--text-secondary)", flexShrink: 0 }}
+            />
+            {isToday && (
+              <span style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "10px", backgroundColor: "#10b981", color: "#fff", fontWeight: 600, flexShrink: 0 }}>Today</span>
+            )}
+          </div>
+          {/* Bottom row: full date label */}
+          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {displayDate}
+          </span>
         </div>
 
         <button
           onClick={() => setDate(format(addDays(new Date(date + "T12:00:00"), 1), "yyyy-MM-dd"))}
-          className="notion-button" style={{ padding: "6px 10px", fontSize: "16px" }}
+          className="notion-button" style={{ padding: "8px 12px", fontSize: "18px", flexShrink: 0 }}
         >›</button>
         <button
           onClick={() => setDate(format(new Date(), "yyyy-MM-dd"))}
-          className="notion-button" style={{ padding: "6px 12px", fontSize: "13px" }}
+          className="notion-button" style={{ padding: "8px 10px", fontSize: "12px", flexShrink: 0 }}
         >Today</button>
       </div>
 

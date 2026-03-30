@@ -94,7 +94,7 @@ export default function ReportsPage() {
                 value={opt.id}
                 checked={reportType === opt.id}
                 onChange={() => setReportType(opt.id)}
-                style={{ accentColor: "var(--text-primary)", width: "15px", height: "15px", flexShrink: 0 }}
+                style={{ accentColor: "#888", width: "15px", height: "15px", flexShrink: 0 }}
               />
               <div>
                 <div style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>{opt.label}</div>
