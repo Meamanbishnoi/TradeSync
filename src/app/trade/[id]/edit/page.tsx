@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
 import MultiImageUploader from "@/components/MultiImageUploader";
 import ComboBox from "@/components/ComboBox";
 import StarRating from "@/components/StarRating";
@@ -11,17 +10,19 @@ import { useToast } from "@/components/Toast";
 import { POINT_MULTIPLIERS, DEFAULT_SESSIONS } from "@/lib/constants";
 
 function calcPnl(entry: string, exit: string, contracts: string, instrument: string, direction: string): string {
-  const e = parseFloat(entry);
-  const x = parseFloat(exit);
-  const c = parseFloat(contracts) || 1;
+  const e = parseFloat(entry), x = parseFloat(exit), c = parseFloat(contracts) || 1;
   if (isNaN(e) || isNaN(x)) return "";
   const multiplier = POINT_MULTIPLIERS[instrument.toUpperCase()];
-  if (multiplier) {
-    const points = direction === "Long" ? x - e : e - x;
-    return (points * multiplier * c).toFixed(2);
-  }
-  const diff = direction === "Long" ? x - e : e - x;
-  return (diff * c).toFixed(2);
+  if (multiplier) { const pts = direction === "Long" ? x - e : e - x; return (pts * multiplier * c).toFixed(2); }
+  return ((direction === "Long" ? x - e : e - x) * c).toFixed(2);
+}
+
+function calcRMultiple(entry: string, exit: string, stopLoss: string, direction: string): string {
+  const e = parseFloat(entry), x = parseFloat(exit), sl = parseFloat(stopLoss);
+  if (isNaN(e) || isNaN(x) || isNaN(sl) || sl === e) return "";
+  const risk = Math.abs(e - sl);
+  const reward = direction === "Long" ? x - e : e - x;
+  return (reward / risk).toFixed(2);
 }
 
 export default function EditTradePage() {
@@ -29,24 +30,19 @@ export default function EditTradePage() {
   const params = useParams();
   const tradeId = params?.id as string;
   const { showToast } = useToast();
+  const tagInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   const [formData, setFormData] = useState({
-    instrument: "",
-    direction: "Long",
+    instrument: "", direction: "Long",
     date: new Date().toISOString().slice(0, 10),
-    session: "",
-    entryPrice: "",
-    exitPrice: "",
-    contractSize: "",
-    pnl: "",
-    setup: "",
-    emotions: "",
-    notes: "",
-    rating: 0,
+    session: "", entryPrice: "", exitPrice: "", stopLoss: "",
+    contractSize: "", pnl: "", setup: "", emotions: "", notes: "", rating: 0,
   });
 
   const [customInstruments, setCustomInstruments] = useState<string[]>([]);
@@ -55,28 +51,16 @@ export default function EditTradePage() {
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
-
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [initialDataStr, setInitialDataStr] = useState<string | null>(null);
-  const [initialExistingUrlsStr, setInitialExistingUrlsStr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialLoad) return;
-    const isDirty = (initialDataStr !== null && JSON.stringify(formData) !== initialDataStr) 
-                 || (initialExistingUrlsStr !== null && JSON.stringify(existingUrls) !== initialExistingUrlsStr)
-                 || newFiles.length > 0;
-    setHasUnsavedChanges(isDirty);
-  }, [formData, initialDataStr, existingUrls, initialExistingUrlsStr, newFiles, initialLoad]);
+    if (!initialLoad) setHasUnsavedChanges(true);
+  }, [formData, existingUrls, newFiles, tags]);
 
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges && !isSubmitting) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    const h = (e: BeforeUnloadEvent) => { if (hasUnsavedChanges && !isSubmitting) { e.preventDefault(); e.returnValue = ""; } };
+    window.addEventListener("beforeunload", h);
+    return () => window.removeEventListener("beforeunload", h);
   }, [hasUnsavedChanges, isSubmitting]);
 
   useEffect(() => {
@@ -85,120 +69,85 @@ export default function EditTradePage() {
         const res = await fetch(`/api/trades/${tradeId}`);
         if (!res.ok) throw new Error("Failed to load trade");
         const data = await res.json();
-
-        const loadedData = {
-          instrument: data.instrument || "",
-          direction: data.direction || "Long",
+        setFormData({
+          instrument: data.instrument || "", direction: data.direction || "Long",
           date: new Date(data.date).toISOString().slice(0, 10),
           session: data.session || "",
           entryPrice: data.entryPrice?.toString() || "",
           exitPrice: data.exitPrice?.toString() || "",
+          stopLoss: data.stopLoss?.toString() || "",
           contractSize: data.contractSize?.toString() || "",
           pnl: Math.abs(data.pnl).toString() || "",
-          setup: data.setup || "",
-          emotions: data.emotions || "",
-          notes: data.notes || "",
-          rating: data.rating || 0,
-        };
-        setFormData(loadedData);
-        setInitialDataStr(JSON.stringify(loadedData));
-
-        try {
-          if (data.imageUrls) {
-            const urls = JSON.parse(data.imageUrls);
-            setExistingUrls(urls);
-            setInitialExistingUrlsStr(JSON.stringify(urls));
-          } else {
-            setInitialExistingUrlsStr("[]");
-          }
-        } catch {
-          setInitialExistingUrlsStr("[]");
-        }
+          setup: data.setup || "", emotions: data.emotions || "",
+          notes: data.notes || "", rating: data.rating || 0,
+        });
+        if (data.tags) { try { setTags(JSON.parse(data.tags)); } catch {} }
+        if (data.imageUrls) { try { setExistingUrls(JSON.parse(data.imageUrls)); } catch {} }
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : "An error occurred loading the trade";
-        showToast(msg, "error");
-      } finally {
-        setIsLoading(false);
-        setInitialLoad(false);
-      }
+        showToast(err instanceof Error ? err.message : "Error loading trade", "error");
+      } finally { setIsLoading(false); setInitialLoad(false); }
     }
-
-    async function fetchPreferences() {
+    async function fetchPrefs() {
       try {
         const res = await fetch("/api/profile");
         if (res.ok) {
-          const data = await res.json();
-          if (data.customInstruments) setCustomInstruments(JSON.parse(data.customInstruments));
-          if (data.customSessions) setCustomSessions(JSON.parse(data.customSessions));
+          const d = await res.json();
+          if (d.customInstruments) setCustomInstruments(JSON.parse(d.customInstruments));
+          if (d.customSessions) setCustomSessions(JSON.parse(d.customSessions));
         }
       } catch {}
     }
-
-    if (tradeId) {
-      fetchTrade();
-      fetchPreferences();
-    }
+    if (tradeId) { fetchTrade(); fetchPrefs(); }
   }, [tradeId, showToast]);
 
-  // Auto-calculate PNL when relevant fields change (skip on initial load)
   useEffect(() => {
     if (initialLoad) return;
     if (formData.entryPrice && formData.exitPrice) {
       const auto = calcPnl(formData.entryPrice, formData.exitPrice, formData.contractSize, formData.instrument, formData.direction);
-      if (auto !== "") {
-        setFormData(prev => ({ ...prev, pnl: auto }));
-        setPnlAutoCalc(true);
-      }
+      if (auto !== "") { setFormData(prev => ({ ...prev, pnl: auto })); setPnlAutoCalc(true); }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.entryPrice, formData.exitPrice, formData.contractSize, formData.instrument, formData.direction]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const rMultiple = calcRMultiple(formData.entryPrice, formData.exitPrice, formData.stopLoss, formData.direction);
 
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags(prev => [...prev, t]);
+    setTagInput(""); tagInputRef.current?.focus();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setIsSubmitting(true);
     try {
       let uploadedUrls: string[] = [];
       for (const file of newFiles) {
-        const fileData = new FormData();
-        fileData.append("file", file);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: fileData });
-        if (uploadRes.ok) {
-          const { url } = await uploadRes.json();
-          uploadedUrls.push(url);
-        } else {
-          throw new Error("Failed to upload an image");
-        }
+        const fd = new FormData(); fd.append("file", file);
+        const r = await fetch("/api/upload", { method: "POST", body: fd });
+        if (r.ok) { const { url } = await r.json(); uploadedUrls.push(url); }
+        else throw new Error("Failed to upload an image");
       }
-
       const res = await fetch(`/api/trades/${tradeId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          instrument: formData.instrument,
-          direction: formData.direction,
-          date: new Date(formData.date).toISOString(),
-          session: formData.session,
+          instrument: formData.instrument, direction: formData.direction,
+          date: new Date(formData.date).toISOString(), session: formData.session,
           entryPrice: parseFloat(formData.entryPrice) || 0,
           exitPrice: parseFloat(formData.exitPrice) || 0,
+          stopLoss: formData.stopLoss ? parseFloat(formData.stopLoss) : null,
           contractSize: formData.contractSize ? parseFloat(formData.contractSize) : null,
           pnl: parseFloat(formData.pnl) || 0,
-          setup: formData.setup,
-          emotions: formData.emotions,
-          notes: formData.notes,
+          setup: formData.setup, emotions: formData.emotions, notes: formData.notes,
           imageUrls: [...existingUrls, ...uploadedUrls],
           rating: formData.rating > 0 ? formData.rating : null,
+          tags,
         }),
       });
-
       if (!res.ok) throw new Error("Failed to update trade");
-
       showToast("Trade updated successfully", "success");
-      router.push(`/trade/${tradeId}`);
-      router.refresh();
+      router.push(`/trade/${tradeId}`); router.refresh();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "An error occurred";
-      showToast(msg, "error");
+      showToast(err instanceof Error ? err.message : "An error occurred", "error");
       setIsSubmitting(false);
     }
   };
@@ -209,126 +158,71 @@ export default function EditTradePage() {
     if (name === "pnl") setPnlAutoCalc(false);
   }, []);
 
-  if (isLoading) {
-    return <div style={{ textAlign: "center", marginTop: "100px" }}>Loading...</div>;
-  }
+  if (isLoading) return <div style={{ textAlign: "center", marginTop: "100px" }}>Loading...</div>;
 
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
       <div style={{ marginBottom: "24px" }}>
-        <button 
-          type="button"
-          onClick={() => {
-            if (hasUnsavedChanges) {
-              setShowExitConfirm(true);
-            } else {
-              router.push(`/trade/${tradeId}`);
-            }
-          }}
-          style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "16px", cursor: "pointer", padding: 0 }}
-        >
+        <button type="button" onClick={() => hasUnsavedChanges ? setShowExitConfirm(true) : router.push(`/trade/${tradeId}`)}
+          style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "16px", cursor: "pointer", padding: 0 }}>
           ← Back to trade details
         </button>
       </div>
-
-      <h1 style={{ fontSize: "38px", marginBottom: "32px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>Edit Trade</h1>
-
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }} className="trade-form-grid">
-
+      <h1 style={{ fontSize: "32px", marginBottom: "28px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>Edit Trade</h1>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }} className="trade-form-grid">
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Instrument</label><ComboBox name="instrument" value={formData.instrument} onChange={v => setFormData(p => ({ ...p, instrument: v }))} options={customInstruments} placeholder="e.g. ES, NQ" required /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Direction</label><ComboBox name="direction" value={formData.direction} onChange={v => setFormData(p => ({ ...p, direction: v }))} options={["Long", "Short"]} required /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Date</label><input type="date" name="date" value={formData.date} onChange={handleChange} className="notion-input" required /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Session</label><ComboBox name="session" value={formData.session} onChange={v => setFormData(p => ({ ...p, session: v }))} options={customSessions.length > 0 ? customSessions : DEFAULT_SESSIONS} placeholder="Select Session..." /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Entry Price</label><input type="number" step="any" name="entryPrice" value={formData.entryPrice} onChange={handleChange} className="notion-input" required /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Exit Price</label><input type="number" step="any" name="exitPrice" value={formData.exitPrice} onChange={handleChange} className="notion-input" required /></div>
           <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Instrument</label>
-            <ComboBox name="instrument" value={formData.instrument} onChange={(val) => setFormData(prev => ({ ...prev, instrument: val }))} options={customInstruments} placeholder="e.g. ES, NQ, EURUSD" required />
+            <label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Stop Loss <span style={{ fontSize: "12px" }}>(optional)</span></label>
+            <input type="number" step="any" name="stopLoss" value={formData.stopLoss} onChange={handleChange} className="notion-input" placeholder="Stop loss price" />
+            {rMultiple !== "" && <div style={{ marginTop: "4px", fontSize: "12px", color: parseFloat(rMultiple) >= 0 ? "#0f7b6c" : "#eb5757", fontWeight: 600 }}>R-Multiple: {parseFloat(rMultiple) >= 0 ? "+" : ""}{rMultiple}R</div>}
           </div>
-
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Contract / Lot Size <span style={{ fontSize: "12px" }}>(optional)</span></label><input type="number" step="any" name="contractSize" value={formData.contractSize} onChange={handleChange} className="notion-input" /></div>
           <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Direction</label>
-            <ComboBox name="direction" value={formData.direction} onChange={(val) => setFormData(prev => ({ ...prev, direction: val }))} options={["Long", "Short"]} required />
+            <label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>PNL ($){pnlAutoCalc && <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--accent-color)" }}>auto-calculated</span>}</label>
+            <input type="number" step="any" name="pnl" value={formData.pnl} onChange={handleChange} className="notion-input" required />
           </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Date</label>
-            <input type="date" name="date" value={formData.date} onChange={handleChange} className="notion-input" required />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Session</label>
-            <ComboBox name="session" value={formData.session} onChange={(val) => setFormData(prev => ({ ...prev, session: val }))} options={customSessions.length > 0 ? customSessions : DEFAULT_SESSIONS} placeholder="Select Session..." />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Entry Price</label>
-            <input type="number" step="any" name="entryPrice" value={formData.entryPrice} onChange={handleChange} className="notion-input" required />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Exit Price</label>
-            <input type="number" step="any" name="exitPrice" value={formData.exitPrice} onChange={handleChange} className="notion-input" required />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Contract / Lot Size (Optional)</label>
-            <input type="number" step="any" name="contractSize" value={formData.contractSize} onChange={handleChange} className="notion-input" placeholder="e.g. 1, 0.5, 100" />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>
-              PNL ($)
-              {pnlAutoCalc && <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--accent-color)" }}>auto-calculated</span>}
-            </label>
-            <input type="number" step="any" name="pnl" value={formData.pnl} onChange={handleChange} className="notion-input" required placeholder="Amount (sign auto-calculated)" />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Setup</label>
-            <input type="text" name="setup" value={formData.setup} onChange={handleChange} className="notion-input" placeholder="e.g. Breakout, Reversion" />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "16px", color: "var(--text-secondary)", marginBottom: "4px" }}>Trade Rating</label>
-            <div style={{ marginTop: "8px" }}>
-              <StarRating rating={formData.rating} onChange={(val) => setFormData(prev => ({ ...prev, rating: val }))} />
-            </div>
-          </div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Setup</label><input type="text" name="setup" value={formData.setup} onChange={handleChange} className="notion-input" placeholder="e.g. Breakout, IFVG" /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Trade Rating</label><div style={{ marginTop: "8px" }}><StarRating rating={formData.rating} onChange={v => setFormData(p => ({ ...p, rating: v }))} /></div></div>
         </div>
 
-        <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "8px 0" }} />
-
+        {/* Tags */}
         <div>
-          <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Emotions</label>
-          <textarea name="emotions" value={formData.emotions} onChange={handleChange} className="notion-input" style={{ minHeight: "80px", resize: "vertical" }} placeholder="How did you feel during this trade?" />
+          <label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "8px" }}>Tags</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
+            {tags.map(tag => (
+              <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "3px 10px", borderRadius: "20px", backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-color)", fontSize: "13px" }}>
+                {tag}
+                <button type="button" onClick={() => setTags(t => t.filter(x => x !== tag))} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: "0 2px", fontSize: "14px", lineHeight: 1 }}>×</button>
+              </span>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <input ref={tagInputRef} type="text" value={tagInput} onChange={e => setTagInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+              className="notion-input" placeholder="e.g. FOMO, A+ setup" style={{ flex: 1 }} />
+            <button type="button" onClick={addTag} className="notion-button" style={{ padding: "6px 14px", flexShrink: 0 }}>Add</button>
+          </div>
         </div>
 
-        <div>
-          <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Notes</label>
-          <textarea name="notes" value={formData.notes} onChange={handleChange} className="notion-input" style={{ minHeight: "150px", resize: "vertical" }} placeholder="Write your trade review here..." />
-        </div>
-
-        <div>
-          <label style={{ display: "block", fontSize: "20px", fontWeight: 600, marginBottom: "8px" }}>Screenshots</label>
-          <MultiImageUploader existingUrls={existingUrls} onExistingUrlsChange={setExistingUrls} newFiles={newFiles} onNewFilesChange={setNewFiles} />
-        </div>
-
-        <div style={{ marginTop: "16px", display: "flex", justifyContent: "flex-end" }}>
+        <hr style={{ border: "none", borderTop: "1px solid var(--border-color)" }} />
+        <div><label style={{ display: "block", fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>Emotions</label><textarea name="emotions" value={formData.emotions} onChange={handleChange} className="notion-input" style={{ minHeight: "80px", resize: "vertical" }} placeholder="How did you feel?" /></div>
+        <div><label style={{ display: "block", fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>Notes</label><textarea name="notes" value={formData.notes} onChange={handleChange} className="notion-input" style={{ minHeight: "120px", resize: "vertical" }} placeholder="Trade review..." /></div>
+        <div><label style={{ display: "block", fontSize: "18px", fontWeight: 600, marginBottom: "8px" }}>Screenshots</label><MultiImageUploader existingUrls={existingUrls} onExistingUrlsChange={setExistingUrls} newFiles={newFiles} onNewFilesChange={setNewFiles} /></div>
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <button type="submit" disabled={isSubmitting} className="notion-button notion-button-primary" style={{ padding: "10px 24px", opacity: isSubmitting ? 0.7 : 1 }}>
             {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>
-
-      <ConfirmModal
-        isOpen={showExitConfirm}
-        title="Unsaved Changes"
-        message="You have unsaved changes. Are you sure you want to leave? Your unsaved data will be lost."
-        confirmLabel="Leave Page"
-        cancelLabel="Stay"
-        onConfirm={() => {
-          setShowExitConfirm(false);
-          router.push(`/trade/${tradeId}`);
-        }}
-        onCancel={() => setShowExitConfirm(false)}
-        isDestructive={true}
-      />
+      <ConfirmModal isOpen={showExitConfirm} title="Unsaved Changes" message="Leave without saving?" confirmLabel="Leave" cancelLabel="Stay"
+        onConfirm={() => { setShowExitConfirm(false); router.push(`/trade/${tradeId}`); }}
+        onCancel={() => setShowExitConfirm(false)} isDestructive />
     </div>
   );
 }

@@ -54,22 +54,23 @@ export async function GET(req: Request) {
   doc.setFillColor(37, 37, 37);
   doc.rect(0, 0, W, 28, "F");
 
-  // Logo icon
+  // Logo icon — white rounded square with chart icon
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(margin, 6, 16, 16, 3, 3, "F");
   doc.setDrawColor(37, 37, 37);
   doc.setLineWidth(1.2);
-  doc.line(margin + 3, margin + 9, margin + 3, margin + 13);
-  doc.line(margin + 3, margin + 13, margin + 7, margin + 10);
-  doc.line(margin + 7, margin + 10, margin + 10, margin + 12);
-  doc.line(margin + 10, margin + 12, margin + 13, margin + 8);
+  // Chart lines inside the icon (y coords relative to icon top at y=6)
+  doc.line(margin + 3, 18, margin + 3, 20);
+  doc.line(margin + 3, 20, margin + 7, 16);
+  doc.line(margin + 7, 16, margin + 10, 18);
+  doc.line(margin + 10, 18, margin + 13, 12);
 
   // Brand name
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
-  doc.text("TradeSync", margin + 20, 17);
-  doc.setFontSize(9);
+  doc.text("TradeSync", margin + 20, 16);
+  doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(180, 180, 180);
   doc.text("Trading Journal Report", margin + 20, 22);

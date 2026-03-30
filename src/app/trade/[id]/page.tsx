@@ -141,7 +141,42 @@ export default async function TradeDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
         )}
+
+        {/* Stop Loss + R-Multiple */}
+        {(trade as any).stopLoss != null && (
+          <div style={{ display: "grid", gridTemplateColumns: "140px 1fr", minHeight: "28px", alignItems: "center" }}>
+            <span style={{ color: "var(--text-secondary)", fontSize: "16px" }}>Stop Loss</span>
+            <span style={{ fontSize: "16px", color: "var(--text-primary)" }}>
+              {(trade as any).stopLoss}
+              {(() => {
+                const sl = (trade as any).stopLoss as number;
+                const risk = Math.abs(trade.entryPrice - sl);
+                const reward = trade.direction === "Long" ? trade.exitPrice - trade.entryPrice : trade.entryPrice - trade.exitPrice;
+                const r = risk > 0 ? (reward / risk).toFixed(2) : null;
+                return r ? <span style={{ marginLeft: "10px", fontSize: "14px", fontWeight: 700, color: parseFloat(r) >= 0 ? "#0f7b6c" : "#eb5757" }}>{parseFloat(r) >= 0 ? "+" : ""}{r}R</span> : null;
+              })()}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Tags */}
+      {(trade as any).tags && (() => {
+        try {
+          const tags: string[] = JSON.parse((trade as any).tags);
+          if (!tags.length) return null;
+          return (
+            <div style={{ marginBottom: "32px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "10px" }}>Tags</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {tags.map(tag => (
+                  <span key={tag} style={{ padding: "3px 12px", borderRadius: "20px", backgroundColor: "var(--bg-hover)", border: "1px solid var(--border-color)", fontSize: "13px", color: "var(--text-primary)" }}>{tag}</span>
+                ))}
+              </div>
+            </div>
+          );
+        } catch { return null; }
+      })()}
 
       {trade.emotions && (
         <div style={{ marginBottom: "40px" }}>
