@@ -35,8 +35,8 @@ export async function POST(req: Request) {
     const userId = session.user.id;
     const {
       instrument, direction, date, session: tradeSession,
-      entryPrice, exitPrice, setup, emotions, notes,
-      imageUrls, contractSize, rating, pnl: rawPnl,
+      entryPrice, exitPrice, stopLoss, setup, emotions, notes,
+      imageUrls, contractSize, rating, pnl: rawPnl, tags,
     } = await req.json();
 
     if (!instrument || !direction || !date || !entryPrice || !exitPrice) {
@@ -57,8 +57,10 @@ export async function POST(req: Request) {
         session: tradeSession || null,
         entryPrice: parseFloat(entryPrice) || 0,
         exitPrice: parseFloat(exitPrice) || 0,
+        stopLoss: stopLoss ? parseFloat(stopLoss) : null,
         pnl,
         setup: setup || null,
+        tags: tags && tags.length > 0 ? JSON.stringify(tags) : null,
         emotions: emotions || null,
         notes: notes || null,
         contractSize: contractSize ? parseFloat(contractSize) : null,

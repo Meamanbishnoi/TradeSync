@@ -54,6 +54,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       instrument, direction, date, session: tradeSession,
       entryPrice, exitPrice, setup, emotions, notes,
       imageUrls, contractSize, rating, pnl: rawPnl,
+      stopLoss, tags,
     } = await req.json();
 
     const existingTrade = await prisma.trade.findUnique({ where: { id } });
@@ -82,8 +83,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         session: tradeSession || null,
         entryPrice: parseFloat(entryPrice) || 0,
         exitPrice: parseFloat(exitPrice) || 0,
+        stopLoss: stopLoss ? parseFloat(stopLoss) : null,
         pnl,
         setup: setup || null,
+        tags: tags && tags.length > 0 ? JSON.stringify(tags) : null,
         emotions: emotions || null,
         notes: notes || null,
         contractSize: contractSize ? parseFloat(contractSize) : null,

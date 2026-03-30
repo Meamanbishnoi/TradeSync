@@ -8,32 +8,35 @@ datasource db {
 }
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
+  id                String         @id @default(cuid())
+  email             String         @unique
   password          String
   name              String?
   customInstruments String?
   customSessions    String?
-  emailVerified     Boolean   @default(false)
+  emailVerified     Boolean        @default(false)
   verifyToken       String?
   verifyTokenExp    DateTime?
   trades            Trade[]
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  dailyJournals     DailyJournal[]
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 }
 
 model Trade {
   id            String   @id @default(cuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  instrument    String   // e.g., ES, NQ
-  direction     String   // "Long" or "Short"
+  instrument    String
+  direction     String
   session       String?
   date          DateTime
   entryPrice    Float
   exitPrice     Float
+  stopLoss      Float?
   pnl           Float
   setup         String?
+  tags          String?  // JSON array of strings
   emotions      String?
   notes         String?
   imageUrls     String?
@@ -41,4 +44,17 @@ model Trade {
   rating        Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model DailyJournal {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // "yyyy-MM-dd"
+  prePlan   String?
+  review    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
 }
