@@ -10,9 +10,26 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
   const perPage = Math.min(200, Math.max(1, parseInt(searchParams.get("perPage") ?? "24")));
+  const instrument = searchParams.get("instrument") ?? "";
+  const direction = searchParams.get("direction") ?? "";
+  const dateFrom = searchParams.get("dateFrom") ?? "";
+  const dateTo = searchParams.get("dateTo") ?? "";
+
+  const where: Record<string, unknown> = {
+    userId: session.user.id,
+    NOT: { imageUrls: null },
+  };
+  if (instrument) where.instrument = { contains: instrument, mode: "insensitive" };
+  if (direction) where.direction = direction;
+  if (dateFrom || dateTo) {
+    where.date = {
+      ...(dateFrom ? { gte: new Date(dateFrom + "T00:00:00.000Z") } : {}),
+      ...(dateTo ? { lte: new Date(dateTo + "T23:59:59.999Z") } : {}),
+    };
+  }
 
   const trades = await prisma.trade.findMany({
-    where: { userId: session.user.id, NOT: { imageUrls: null } },
+    where,
     orderBy: { date: "desc" },
     select: { id: true, instrument: true, direction: true, date: true, pnl: true, imageUrls: true },
   });

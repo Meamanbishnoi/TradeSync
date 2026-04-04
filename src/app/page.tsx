@@ -5,6 +5,8 @@ import { prisma } from "@/lib/prisma";
 import EquityCurve from "@/components/EquityCurve";
 import { format } from "date-fns";
 import FloatingAddButton from "@/components/FloatingAddButton";
+import DashboardClient from "@/components/DashboardClient";
+import WeeklyBarChart from "@/components/WeeklyBarChart";
 
 export const dynamic = "force-dynamic";
 
@@ -128,6 +130,9 @@ export default async function Dashboard() {
     <div style={{ paddingTop: "16px", paddingBottom: "64px" }}>
       <FloatingAddButton />
 
+      {/* Today's summary bar + keyboard shortcut */}
+      <DashboardClient trades={serializedTrades} />
+
       {/* KPI Tiles */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "32px", marginTop: "8px" }}>
         <StatTile 
@@ -168,6 +173,13 @@ export default async function Dashboard() {
               </div>
             )}
           </div>
+          {/* Last 7 days bar chart */}
+          {trades.length > 0 && (
+            <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid var(--border-color)" }}>
+              <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Last 7 Days</div>
+              <WeeklyBarChart trades={serializedTrades} />
+            </div>
+          )}
         </div>
 
         {/* Recent Trades card */}
