@@ -181,12 +181,41 @@ export default function ProfilePage() {
   return (
     <div style={{ maxWidth: "860px", margin: "0 auto", paddingTop: "16px", paddingBottom: "80px" }}>
       {/* Page header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
         <Avatar avatarId={avatarId} name={formData.name || formData.email} size={52} />
         <div>
           <div style={{ fontSize: "20px", fontWeight: 700 }}>{formData.name || formData.email}</div>
           <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{formData.email}{memberSince && ` · Member since ${memberSince}`}</div>
         </div>
+      </div>
+
+      {/* Mobile horizontal tab bar — sits right below header on small screens */}
+      <style>{`
+        .settings-mobile-tabs { display: none; }
+        @media (max-width: 600px) {
+          .settings-sidebar { display: none !important; }
+          .settings-layout { flex-direction: column !important; }
+          .settings-mobile-tabs {
+            display: flex; gap: 6px; overflow-x: auto;
+            padding-bottom: 12px; margin-bottom: 16px; scrollbar-width: none;
+          }
+          .settings-mobile-tabs::-webkit-scrollbar { display: none; }
+        }
+      `}</style>
+      <div className="settings-mobile-tabs">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            style={{
+              display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px",
+              borderRadius: "20px", border: "none", flexShrink: 0,
+              backgroundColor: activeTab === tab.id ? "var(--text-primary)" : "var(--bg-secondary)",
+              color: activeTab === tab.id ? "var(--bg-color)" : "var(--text-secondary)",
+              fontSize: "13px", fontWeight: activeTab === tab.id ? 600 : 400,
+              cursor: "pointer", fontFamily: "var(--font-family)",
+            }}>
+            {tab.icon}{tab.label}
+          </button>
+        ))}
       </div>
 
       <div style={{ display: "flex", gap: "20px", alignItems: "flex-start" }} className="settings-layout">
@@ -329,29 +358,15 @@ export default function ProfilePage() {
           {/* ── Data tab ── */}
           {activeTab === "data" && (
             <div>
-              <Section title="Export Backup" desc="Download all your trades and journal entries as a .zip file.">
+              <Section title="Export Backup" desc="Download a complete, readable HTML file of all your trades, journal entries, emotions, notes, and screenshots. Open it in any browser.">
                 <button type="button" onClick={() => { window.location.href = "/api/backup"; }}
                   className="notion-button"
                   style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
-                  Download Backup (.zip)
+                  Download Backup (.html)
                 </button>
-              </Section>
-
-              <Section title="Restore Backup" desc="Restore from a previously downloaded backup. This will overwrite all current data.">
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <input type="file" accept=".zip" onChange={handleRestoreChange} disabled={isSubmitting}
-                    style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer", width: "100%" }} />
-                  <button type="button" className="notion-button" disabled={isSubmitting}
-                    style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 16px", pointerEvents: "none" }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                    Restore from Backup
-                  </button>
-                </div>
               </Section>
 
               <Section title="Account Stats">
@@ -374,55 +389,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Mobile tab bar — shown below content on small screens */}
-      <style>{`
-        @media (max-width: 600px) {
-          .settings-sidebar { display: none !important; }
-          .settings-layout { flex-direction: column !important; }
-        }
-        .settings-mobile-tabs {
-          display: none;
-        }
-        @media (max-width: 600px) {
-          .settings-mobile-tabs {
-            display: flex;
-            gap: 4px;
-            overflow-x: auto;
-            padding-bottom: 12px;
-            margin-bottom: 16px;
-            scrollbar-width: none;
-          }
-          .settings-mobile-tabs::-webkit-scrollbar { display: none; }
-        }
-      `}</style>
-
-      {/* Mobile horizontal tab bar */}
-      <div className="settings-mobile-tabs" style={{ position: "sticky", top: 0, zIndex: 5, backgroundColor: "var(--bg-color)", paddingTop: "8px" }}>
-        {TABS.map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            style={{
-              display: "flex", alignItems: "center", gap: "6px", padding: "7px 14px",
-              borderRadius: "20px", border: "none", flexShrink: 0,
-              backgroundColor: activeTab === tab.id ? "var(--text-primary)" : "var(--bg-secondary)",
-              color: activeTab === tab.id ? "var(--bg-color)" : "var(--text-secondary)",
-              fontSize: "13px", fontWeight: activeTab === tab.id ? 600 : 400,
-              cursor: "pointer", fontFamily: "var(--font-family)",
-            }}>
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <ConfirmModal
-        isOpen={isRestoreModalOpen}
-        title="Restore Backup"
-        message="WARNING: This will permanently overwrite all your current trades and journal entries. Are you sure?"
-        confirmLabel="Restore"
-        onConfirm={handleConfirmRestore}
-        onCancel={() => { setIsRestoreModalOpen(false); setPendingRestoreFile(null); }}
-        isDestructive
-      />
     </div>
   );
 }
