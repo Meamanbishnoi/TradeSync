@@ -3,85 +3,70 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import JSZip from "jszip";
-import fs from "fs/promises";
-import path from "path";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session || !session.user?.id) {
+    if (!session?.user?.id) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch all user trades
-    const trades = await prisma.trade.findMany({
-      where: { userId: session.user.id },
-      orderBy: { date: "desc" }
-    });
+    const userId = session.user.id;
+
+    const [trades, journals] = await Promise.all([
+      prisma.trade.findMany({ where: { userId }, orderBy: { date: "desc" } }),
+      prisma.dailyJournal.findMany({ where: { userId }, orderBy: { date: "desc" } }),
+    ]);
 
     const zip = new JSZip();
 
-    // Add JSON database data
+    // Metadata so we can validate on restore
+    zip.file("manifest.json", JSON.stringify({
+      version: 2,
+      exportedAt: new Date().toISOString(),
+      tradeCount: trades.length,
+      journalCount: journals.length,
+    }, null, 2));
+
     zip.file("trades.json", JSON.stringify(trades, null, 2));
+    zip.file("journals.json", JSON.stringify(journals, null, 2));
 
-    // Create a folder for media
+    // Fetch and bundle cloud images
     const imagesFolder = zip.folder("images");
-
     if (imagesFolder) {
-      const publicDir = path.join(process.cwd(), "public");
-
-      // Loop through trades and aggregate all image URLs
-      const allImageUrls = new Set<string>();
-      
-      trades.forEach(trade => {
-        if (trade.imageUrls) {
-          try {
-            const parsedUrls: string[] = JSON.parse(trade.imageUrls);
-            parsedUrls.forEach(url => {
-              if (url && typeof url === "string" && (url.startsWith("/uploads/") || url.includes("blob.vercel-storage.com"))) {
-                allImageUrls.add(url);
-              }
-            });
-          } catch (e) {
-            console.error("Failed to parse image URLs for trade ID:", trade.id);
-          }
-        }
+      const allUrls = new Set<string>();
+      trades.forEach(t => {
+        if (!t.imageUrls) return;
+        try {
+          const urls: string[] = JSON.parse(t.imageUrls);
+          urls.forEach(u => { if (u?.startsWith("http")) allUrls.add(u); });
+        } catch {}
       });
 
-      // Package each physical image file from either Vercel Blob or local fallback into the zip
-      for (const url of Array.from(allImageUrls)) {
+      for (const url of allUrls) {
         try {
-          const filename = path.basename(url);
-          let fileBuffer: Buffer | Uint8Array;
-          
-          if (url.startsWith("http")) {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("Failed to fetch cloud image");
-            const arrayBuf = await res.arrayBuffer();
-            fileBuffer = Buffer.from(arrayBuf);
-            imagesFolder.file(filename, fileBuffer);
-          }
-          // skip local /uploads/ paths — not available on Vercel
-        } catch (e) {
-          console.error(`Missing image file for backup: ${url}`);
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const buf = Buffer.from(await res.arrayBuffer());
+          const filename = url.split("/").pop()?.split("?")[0] ?? "image.png";
+          imagesFolder.file(filename, buf);
+        } catch {
+          // non-fatal — skip missing images
         }
       }
     }
 
     const zipBuffer = await zip.generateAsync({ type: "uint8array" });
 
-    // Stream the finalized zip buffer to the client
-    return new NextResponse(zipBuffer as any, {
+    return new NextResponse(zipBuffer as unknown as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="tradesync-backup-${new Date().toISOString().split("T")[0]}.zip"`,
       },
     });
-
   } catch (error) {
-    console.error("Backup generator failed:", error);
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
+    console.error("Backup failed:", error);
+    return NextResponse.json({ message: "Backup failed" }, { status: 500 });
   }
 }
