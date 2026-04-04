@@ -9,6 +9,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 import SecurityQuestionPrompt from "@/components/SecurityQuestionPrompt";
+import BlockedUserSignOut from "@/components/BlockedUserSignOut";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function RootLayout({
   const displayName = session?.user?.name || session?.user?.email || null;
   const avatarId = session?.user?.avatarId ?? null;
   const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin ?? false;
+  const isBlocked = (session?.user as { isBlocked?: boolean })?.isBlocked ?? false;
 
   return (
     <html lang="en" data-theme="" suppressHydrationWarning>
@@ -61,6 +63,13 @@ export default async function RootLayout({
       </head>
       <body style={{ margin: 0, padding: 0 }}>
         <Providers>
+          {isAdmin ? (
+            // Admin: render children directly, admin layout handles its own chrome
+            <>
+              {children}
+              {session && isBlocked && <BlockedUserSignOut />}
+            </>
+          ) : (
           <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
             <nav style={{ 
               display: 'flex', 
@@ -105,8 +114,10 @@ export default async function RootLayout({
               </main>
             </div>
           </div>
-          {session && <MobileNav />}
-          {session && <SecurityQuestionPrompt />}
+          )}
+          {session && !isAdmin && <MobileNav />}
+          {session && !isAdmin && <SecurityQuestionPrompt />}
+          {session && !isAdmin && isBlocked && <BlockedUserSignOut />}
         </Providers>
       </body>
     </html>

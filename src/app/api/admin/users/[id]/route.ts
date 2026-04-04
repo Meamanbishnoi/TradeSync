@@ -15,12 +15,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ["isBlocked", "canAddTrades", "canViewAnalytics", "canExport"];
+  const allowed = ["isBlocked", "canAddTrades", "canViewAnalytics", "canExport", "maxTrades", "maxImages"];
   for (const key of allowed) {
     if (key in body) {
+      const val = body[key];
+      // maxTrades and maxImages can be null (unlimited) or a number
       await prisma.$executeRawUnsafe(
         `UPDATE "User" SET "${key}" = $1 WHERE id = $2`,
-        body[key], id
+        val === "" ? null : val, id
       );
     }
   }

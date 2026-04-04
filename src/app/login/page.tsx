@@ -53,6 +53,11 @@ function LoginForm() {
           Verification link expired. Please try again.
         </div>
       )}
+      {tokenError === "blocked" && (
+        <div style={{ color: "#eb5757", fontSize: "13px", backgroundColor: "rgba(235,87,87,0.1)", padding: "10px 12px", borderRadius: "6px", marginBottom: "16px" }}>
+          Your account has been blocked. Please contact the administrator.
+        </div>
+      )}
 
       {/* Google login */}
       <button

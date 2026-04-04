@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { put } from "@vercel/blob";
 import crypto from "crypto";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
@@ -10,6 +11,29 @@ export async function POST(req: Request) {
 
     if (!session || !session.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // Check image limit from DB
+    const permRows = await prisma.$queryRaw<{ isBlocked: boolean; maxImages: number | null }[]>`
+      SELECT "isBlocked", "maxImages" FROM "User" WHERE id = ${userId} LIMIT 1
+    `;
+    const perms = permRows[0];
+    if (perms?.isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
+
+    if (perms?.maxImages != null) {
+      const tradesWithImages = await prisma.trade.findMany({
+        where: { userId, NOT: { imageUrls: null } },
+        select: { imageUrls: true },
+      });
+      let totalImages = 0;
+      for (const t of tradesWithImages) {
+        try { totalImages += JSON.parse(t.imageUrls!).length; } catch {}
+      }
+      if (totalImages >= perms.maxImages) {
+        return NextResponse.json({ message: `Image limit reached (${perms.maxImages} images max).` }, { status: 403 });
+      }
     }
 
     const formData = await req.formData();

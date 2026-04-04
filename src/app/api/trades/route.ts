@@ -33,6 +33,23 @@ export async function POST(req: Request) {
     }
 
     const userId = session.user.id;
+
+    // Check permissions from DB directly (source of truth)
+    const permRows = await prisma.$queryRaw<{
+      canAddTrades: boolean; isBlocked: boolean; maxTrades: number | null;
+    }[]>`SELECT "canAddTrades", "isBlocked", "maxTrades" FROM "User" WHERE id = ${userId} LIMIT 1`;
+
+    const perms = permRows[0];
+    if (perms?.isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
+    if (perms?.canAddTrades === false) return NextResponse.json({ message: "You don't have permission to add trades." }, { status: 403 });
+
+    // Enforce trade limit
+    if (perms?.maxTrades != null) {
+      const count = await prisma.trade.count({ where: { userId } });
+      if (count >= perms.maxTrades) {
+        return NextResponse.json({ message: `Trade limit reached (${perms.maxTrades} trades max).` }, { status: 403 });
+      }
+    }
     const {
       instrument, direction, date, session: tradeSession,
       entryPrice, exitPrice, stopLoss, setup, emotions, notes,

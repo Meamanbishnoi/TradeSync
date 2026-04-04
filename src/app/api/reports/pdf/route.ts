@@ -10,6 +10,14 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
+  // Check export permission from DB
+  const permRows = await prisma.$queryRaw<{ canExport: boolean; isBlocked: boolean }[]>`
+    SELECT "canExport", "isBlocked" FROM "User" WHERE id = ${session.user.id} LIMIT 1
+  `;
+  const perms = permRows[0];
+  if (perms?.isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
+  if (perms?.canExport === false) return NextResponse.json({ message: "You don't have permission to export reports." }, { status: 403 });
+
   const { searchParams } = new URL(req.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");

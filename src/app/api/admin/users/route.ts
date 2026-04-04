@@ -18,7 +18,8 @@ export async function GET() {
   const adminCols = await prisma.$queryRaw<{
     id: string; isAdmin: boolean; isBlocked: boolean;
     canAddTrades: boolean; canViewAnalytics: boolean; canExport: boolean;
-  }[]>`SELECT id, "isAdmin", "isBlocked", "canAddTrades", "canViewAnalytics", "canExport" FROM "User"`;
+    maxTrades: number | null; maxImages: number | null;
+  }[]>`SELECT id, "isAdmin", "isBlocked", "canAddTrades", "canViewAnalytics", "canExport", "maxTrades", "maxImages" FROM "User"`;
 
   const colMap = Object.fromEntries(adminCols.map(r => [r.id, r]));
 
@@ -41,7 +42,7 @@ export async function GET() {
   const result = users.map(u => ({
     ...u,
     createdAt: u.createdAt.toISOString(),
-    ...(colMap[u.id] ?? { isAdmin: false, isBlocked: false, canAddTrades: true, canViewAnalytics: true, canExport: true }),
+    ...(colMap[u.id] ?? { isAdmin: false, isBlocked: false, canAddTrades: true, canViewAnalytics: true, canExport: true, maxTrades: null, maxImages: null }),
     tradeCount: tradeMap[u.id] ?? 0,
     imageCount: imageMap[u.id] ?? 0,
   }));

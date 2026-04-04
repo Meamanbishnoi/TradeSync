@@ -15,17 +15,40 @@ interface AdminUser {
   emailVerified: boolean; isAdmin: boolean; isBlocked: boolean;
   canAddTrades: boolean; canViewAnalytics: boolean; canExport: boolean;
   tradeCount: number; imageCount: number;
+  maxTrades: number | null; maxImages: number | null;
 }
 
 type Tab = "overview" | "users";
 
-const S = {
-  card: { backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "10px", padding: "20px" } as React.CSSProperties,
-  label: { fontSize: "11px", color: "#666", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: "8px" },
-  value: { fontSize: "30px", fontWeight: 800, lineHeight: 1 },
-  th: { padding: "10px 14px", fontWeight: 500, textAlign: "left" as const, color: "#666", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.05em", whiteSpace: "nowrap" as const, backgroundColor: "#161616", borderBottom: "1px solid #2a2a2a" },
-  td: { padding: "12px 14px", borderBottom: "1px solid #1e1e1e", fontSize: "13px" },
-};
+const PAGE_SIZE = 8;
+
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
+  return (
+    <button type="button" onClick={onChange} disabled={disabled}
+      style={{ width: "36px", height: "20px", borderRadius: "10px", border: "none", cursor: disabled ? "default" : "pointer",
+        backgroundColor: checked ? "#10b981" : "#2a2a2a", position: "relative", transition: "background 0.2s",
+        flexShrink: 0, opacity: disabled ? 0.4 : 1, outline: "none" }}>
+      <span style={{ position: "absolute", top: "2px", left: checked ? "18px" : "2px", width: "16px", height: "16px",
+        borderRadius: "50%", backgroundColor: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
+    </button>
+  );
+}
+
+function StatCard({ label, value, color, icon }: { label: string; value: number | string; color?: string; icon: React.ReactNode }) {
+  return (
+    <div style={{ backgroundColor: "#111", border: "1px solid #222", borderRadius: "12px", padding: "20px 22px",
+      display: "flex", alignItems: "center", gap: "16px" }}>
+      <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#1a1a1a",
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: color ?? "#888" }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontSize: "11px", color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>{label}</div>
+        <div style={{ fontSize: "26px", fontWeight: 800, lineHeight: 1, color: color ?? "#fff" }}>{typeof value === "number" ? value.toLocaleString() : value}</div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const { data: session } = useSession();
@@ -37,6 +60,8 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [editingLimit, setEditingLimit] = useState<{ id: string; field: "maxTrades" | "maxImages"; value: string } | null>(null);
 
   const loadStats = useCallback(async () => {
     const res = await fetch("/api/admin/stats");
@@ -53,7 +78,7 @@ export default function AdminPage() {
     Promise.all([loadStats(), loadUsers()]).finally(() => setIsLoading(false));
   }, [loadStats, loadUsers]);
 
-  const patch = async (userId: string, data: Record<string, boolean>) => {
+  const patch = async (userId: string, data: Record<string, boolean | number | null>) => {
     setUpdating(userId);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, {
@@ -67,8 +92,18 @@ export default function AdminPage() {
     finally { setUpdating(null); }
   };
 
+  const saveLimit = async (userId: string, field: "maxTrades" | "maxImages", raw: string) => {
+    const val = raw.trim() === "" ? null : parseInt(raw);
+    if (raw.trim() !== "" && (isNaN(val as number) || (val as number) < 0)) {
+      showToast("Enter a valid number or leave empty for unlimited", "error");
+      return;
+    }
+    await patch(userId, { [field]: val });
+    setEditingLimit(null);
+  };
+
   const deleteUser = async (userId: string, email: string) => {
-    if (!window.confirm(`Delete ${email} and ALL their data? Cannot be undone.`)) return;
+    if (!window.confirm(`Delete ${email} and ALL their data? This cannot be undone.`)) return;
     setUpdating(userId);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
@@ -86,149 +121,245 @@ export default function AdminPage() {
     (u.name ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const Toggle = ({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) => (
-    <button type="button" onClick={onChange} disabled={disabled}
-      style={{ width: "38px", height: "22px", borderRadius: "11px", border: "none", cursor: disabled ? "default" : "pointer", backgroundColor: checked ? "#10b981" : "#333", position: "relative", transition: "background 0.2s", flexShrink: 0, opacity: disabled ? 0.4 : 1 }}>
-      <span style={{ position: "absolute", top: "3px", left: checked ? "19px" : "3px", width: "16px", height: "16px", borderRadius: "50%", backgroundColor: "#fff", transition: "left 0.2s" }} />
-    </button>
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const pagedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search]);
 
   if (isLoading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", color: "#666", fontSize: "14px" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", gap: "10px", color: "#555" }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       Loading...
     </div>
   );
 
+  const statIcons = {
+    users: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    new: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
+    blocked: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>,
+    trades: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+    images: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+    journal: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  };
+
+  const th: React.CSSProperties = { padding: "11px 14px", fontWeight: 600, textAlign: "left", color: "#444",
+    fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap",
+    backgroundColor: "#0d0d0d", borderBottom: "1px solid #1e1e1e" };
+  const td: React.CSSProperties = { padding: "13px 14px", borderBottom: "1px solid #161616", fontSize: "13px", verticalAlign: "middle" };
+
   return (
-    <div>
-      {/* Page title */}
-      <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: 800, margin: 0, color: "#fff" }}>Dashboard</h1>
-        <p style={{ color: "#666", fontSize: "13px", margin: "4px 0 0" }}>
-          {format(new Date(), "EEEE, MMMM d, yyyy")} · Logged in as {session?.user?.email}
-        </p>
+    <div style={{ minHeight: "100vh" }}>
+      {/* Page header */}
+      <div style={{ marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
+        <div>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, margin: 0, color: "#fff", letterSpacing: "-0.02em" }}>Admin Dashboard</h1>
+          <p style={{ color: "#444", fontSize: "13px", margin: "4px 0 0" }}>
+            {format(new Date(), "EEEE, MMMM d, yyyy")} · {session?.user?.email}
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {(["overview", "users"] as Tab[]).map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{
+              padding: "8px 18px", fontSize: "13px", fontWeight: 500, borderRadius: "8px",
+              border: tab === t ? "1px solid #333" : "1px solid transparent",
+              backgroundColor: tab === t ? "#1a1a1a" : "transparent",
+              color: tab === t ? "#fff" : "#555", cursor: "pointer", fontFamily: "inherit",
+            }}>
+              {t === "overview" ? "Overview" : `Users (${users.length})`}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Stat cards */}
       {stats && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", marginBottom: "28px" }}>
-          {[
-            { label: "Total Users", value: stats.totalUsers, color: "#fff" },
-            { label: "New This Week", value: stats.recentUsers, color: "#10b981" },
-            { label: "Blocked", value: stats.blockedUsers, color: stats.blockedUsers > 0 ? "#eb5757" : "#fff" },
-            { label: "Total Trades", value: stats.totalTrades, color: "#fff" },
-            { label: "Screenshots", value: stats.totalImages, color: "#fff" },
-            { label: "Journal Entries", value: stats.totalJournals, color: "#fff" },
-          ].map(c => (
-            <div key={c.label} style={S.card}>
-              <div style={S.label}>{c.label}</div>
-              <div style={{ ...S.value, color: c.color }}>{c.value.toLocaleString()}</div>
-            </div>
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "28px" }}>
+          <StatCard label="Total Users" value={stats.totalUsers} icon={statIcons.users} />
+          <StatCard label="New This Week" value={stats.recentUsers} color="#10b981" icon={statIcons.new} />
+          <StatCard label="Blocked" value={stats.blockedUsers} color={stats.blockedUsers > 0 ? "#ef4444" : "#fff"} icon={statIcons.blocked} />
+          <StatCard label="Total Trades" value={stats.totalTrades} icon={statIcons.trades} />
+          <StatCard label="Screenshots" value={stats.totalImages} icon={statIcons.images} />
+          <StatCard label="Journal Entries" value={stats.totalJournals} icon={statIcons.journal} />
         </div>
       )}
 
-      {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #2a2a2a", marginBottom: "20px", gap: "0" }}>
-        {(["overview", "users"] as Tab[]).map(t => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            padding: "10px 20px", fontSize: "13px", fontWeight: tab === t ? 600 : 400,
-            color: tab === t ? "#fff" : "#666", background: "none",
-            borderTop: "none", borderLeft: "none", borderRight: "none",
-            borderBottom: tab === t ? "2px solid #fff" : "2px solid transparent",
-            cursor: "pointer", marginBottom: "-1px", fontFamily: "inherit", textTransform: "capitalize",
-          }}>{t === "overview" ? "Overview" : `Users (${users.length})`}</button>
-        ))}
-      </div>
-
-      {/* Overview */}
+      {/* Overview tab */}
       {tab === "overview" && stats && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <div style={S.card}>
-            <div style={{ ...S.label, marginBottom: "16px" }}>Platform Summary</div>
+          <div style={{ backgroundColor: "#111", border: "1px solid #1e1e1e", borderRadius: "12px", padding: "22px" }}>
+            <div style={{ fontSize: "12px", color: "#444", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "18px" }}>Platform Summary</div>
             {[
               { label: "Avg trades / user", value: stats.totalUsers > 0 ? (stats.totalTrades / stats.totalUsers).toFixed(1) : "0" },
               { label: "Avg images / user", value: stats.totalUsers > 0 ? (stats.totalImages / stats.totalUsers).toFixed(1) : "0" },
               { label: "Avg journal entries / user", value: stats.totalUsers > 0 ? (stats.totalJournals / stats.totalUsers).toFixed(1) : "0" },
-              { label: "Active users (not blocked)", value: (stats.totalUsers - stats.blockedUsers).toString() },
+              { label: "Active users", value: (stats.totalUsers - stats.blockedUsers).toString() },
             ].map(r => (
-              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #222" }}>
-                <span style={{ fontSize: "13px", color: "#888" }}>{r.label}</span>
-                <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>{r.value}</span>
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid #1a1a1a" }}>
+                <span style={{ fontSize: "13px", color: "#666" }}>{r.label}</span>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>{r.value}</span>
               </div>
             ))}
           </div>
-          <div style={S.card}>
-            <div style={{ ...S.label, marginBottom: "16px" }}>Recent Users</div>
-            {users.slice(0, 6).map(u => (
-              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #222" }}>
-                <div>
-                  <div style={{ fontSize: "13px", fontWeight: 500, color: "#fff" }}>{u.name || u.email.split("@")[0]}</div>
-                  <div style={{ fontSize: "11px", color: "#666" }}>{u.email}</div>
+          <div style={{ backgroundColor: "#111", border: "1px solid #1e1e1e", borderRadius: "12px", padding: "22px" }}>
+            <div style={{ fontSize: "12px", color: "#444", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "18px" }}>Recent Users</div>
+            {users.slice(0, 7).map(u => (
+              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #1a1a1a" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "30px", height: "30px", borderRadius: "50%", backgroundColor: "#1e1e1e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#666", flexShrink: 0 }}>
+                    {(u.name || u.email)[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#e5e5e5" }}>{u.name || u.email.split("@")[0]}</div>
+                    <div style={{ fontSize: "11px", color: "#444" }}>{u.email}</div>
+                  </div>
                 </div>
-                <div style={{ fontSize: "11px", color: "#555" }}>{format(new Date(u.createdAt), "MMM d")}</div>
+                <div style={{ fontSize: "11px", color: "#444" }}>{format(new Date(u.createdAt), "MMM d")}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Users */}
+      {/* Users tab */}
       {tab === "users" && (
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search users..."
-              style={{ padding: "8px 14px", fontSize: "13px", backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "7px", color: "#fff", outline: "none", width: "260px" }} />
-            <span style={{ fontSize: "12px", color: "#666" }}>{filteredUsers.length} users</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{ position: "relative" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#444", pointerEvents: "none" }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users..."
+                style={{ paddingLeft: "34px", paddingRight: "14px", paddingTop: "9px", paddingBottom: "9px", fontSize: "13px",
+                  backgroundColor: "#111", border: "1px solid #222", borderRadius: "8px", color: "#e5e5e5",
+                  outline: "none", width: "240px", fontFamily: "inherit" }} />
+            </div>
+            <span style={{ fontSize: "12px", color: "#444" }}>{filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}</span>
           </div>
 
-          <div style={{ overflowX: "auto", border: "1px solid #2a2a2a", borderRadius: "10px" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-              <thead>
-                <tr>
-                  {["User", "Joined", "Trades", "Images", "Add Trades", "Analytics", "Export", "Blocked", ""].map(h => (
-                    <th key={h} style={S.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map(u => (
-                  <tr key={u.id} style={{ backgroundColor: u.isBlocked ? "rgba(235,87,87,0.04)" : "transparent" }}>
-                    <td style={S.td}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{ width: "28px", height: "28px", borderRadius: "50%", backgroundColor: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#888", flexShrink: 0 }}>
-                          {(u.name || u.email)[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 600, color: "#fff", display: "flex", alignItems: "center", gap: "5px" }}>
-                            {u.name || u.email.split("@")[0]}
-                            {u.isAdmin && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "#eb5757", color: "#fff" }}>ADMIN</span>}
-                            {u.isBlocked && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "#f97316", color: "#fff" }}>BLOCKED</span>}
-                          </div>
-                          <div style={{ fontSize: "11px", color: "#555" }}>{u.email}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ ...S.td, color: "#666", whiteSpace: "nowrap" }}>{format(new Date(u.createdAt), "MMM d, yyyy")}</td>
-                    <td style={{ ...S.td, color: "#aaa" }}>{u.tradeCount}</td>
-                    <td style={{ ...S.td, color: "#aaa" }}>{u.imageCount}</td>
-                    <td style={S.td}><Toggle checked={u.canAddTrades} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canAddTrades: !u.canAddTrades })} /></td>
-                    <td style={S.td}><Toggle checked={u.canViewAnalytics} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canViewAnalytics: !u.canViewAnalytics })} /></td>
-                    <td style={S.td}><Toggle checked={u.canExport} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canExport: !u.canExport })} /></td>
-                    <td style={S.td}><Toggle checked={u.isBlocked} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { isBlocked: !u.isBlocked })} /></td>
-                    <td style={S.td}>
-                      {!u.isAdmin && (
-                        <button onClick={() => deleteUser(u.id, u.email)} disabled={updating === u.id}
-                          style={{ fontSize: "12px", padding: "4px 10px", backgroundColor: "rgba(235,87,87,0.15)", color: "#eb5757", border: "1px solid rgba(235,87,87,0.3)", borderRadius: "5px", cursor: "pointer", opacity: updating === u.id ? 0.5 : 1 }}>
-                          Delete
-                        </button>
-                      )}
-                    </td>
+          <div style={{ border: "1px solid #1e1e1e", borderRadius: "12px", overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <thead>
+                  <tr>
+                    {["User", "Joined", "Trades", "Images", "Add Trades", "Analytics", "Export", "Blocked", "Limits", ""].map(h => (
+                      <th key={h} style={th}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pagedUsers.map(u => (
+                    <tr key={u.id} style={{ backgroundColor: u.isBlocked ? "rgba(239,68,68,0.03)" : "transparent", transition: "background 0.1s" }}>
+                      <td style={td}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
+                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#666", flexShrink: 0 }}>
+                            {(u.name || u.email)[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#e5e5e5", display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+                              {u.name || u.email.split("@")[0]}
+                              {u.isAdmin && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "rgba(235,87,87,0.2)", color: "#ef4444", fontWeight: 700 }}>ADMIN</span>}
+                              {u.isBlocked && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "rgba(249,115,22,0.2)", color: "#f97316", fontWeight: 700 }}>BLOCKED</span>}
+                            </div>
+                            <div style={{ fontSize: "11px", color: "#444", marginTop: "1px" }}>{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ ...td, color: "#555", whiteSpace: "nowrap" }}>{format(new Date(u.createdAt), "MMM d, yyyy")}</td>
+                      <td style={{ ...td, color: "#888", fontWeight: 600 }}>{u.tradeCount}</td>
+                      <td style={{ ...td, color: "#888", fontWeight: 600 }}>{u.imageCount}</td>
+                      <td style={td}><Toggle checked={u.canAddTrades} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canAddTrades: !u.canAddTrades })} /></td>
+                      <td style={td}><Toggle checked={u.canViewAnalytics} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canViewAnalytics: !u.canViewAnalytics })} /></td>
+                      <td style={td}><Toggle checked={u.canExport} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canExport: !u.canExport })} /></td>
+                      <td style={td}><Toggle checked={u.isBlocked} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { isBlocked: !u.isBlocked })} /></td>
+                      <td style={td}>
+                        {!u.isAdmin && (
+                          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                            {/* Trades limit */}
+                            {editingLimit?.id === u.id && editingLimit.field === "maxTrades" ? (
+                              <input autoFocus type="number" min="0" value={editingLimit.value}
+                                onChange={e => setEditingLimit({ ...editingLimit, value: e.target.value })}
+                                onBlur={() => saveLimit(u.id, "maxTrades", editingLimit.value)}
+                                onKeyDown={e => { if (e.key === "Enter") saveLimit(u.id, "maxTrades", editingLimit.value); if (e.key === "Escape") setEditingLimit(null); }}
+                                style={{ width: "60px", padding: "3px 6px", fontSize: "12px", backgroundColor: "#1a1a1a", border: "1px solid #10b981", borderRadius: "5px", color: "#fff", outline: "none" }} />
+                            ) : (
+                              <button onClick={() => !u.isAdmin && setEditingLimit({ id: u.id, field: "maxTrades", value: u.maxTrades?.toString() ?? "" })}
+                                title="Set trade limit" style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "5px", border: "1px solid #2a2a2a",
+                                  backgroundColor: "#161616", color: u.maxTrades != null ? "#10b981" : "#555", cursor: "pointer", whiteSpace: "nowrap" }}>
+                                {u.maxTrades != null ? `≤${u.maxTrades}T` : "∞T"}
+                              </button>
+                            )}
+                            {/* Images limit */}
+                            {editingLimit?.id === u.id && editingLimit.field === "maxImages" ? (
+                              <input autoFocus type="number" min="0" value={editingLimit.value}
+                                onChange={e => setEditingLimit({ ...editingLimit, value: e.target.value })}
+                                onBlur={() => saveLimit(u.id, "maxImages", editingLimit.value)}
+                                onKeyDown={e => { if (e.key === "Enter") saveLimit(u.id, "maxImages", editingLimit.value); if (e.key === "Escape") setEditingLimit(null); }}
+                                style={{ width: "60px", padding: "3px 6px", fontSize: "12px", backgroundColor: "#1a1a1a", border: "1px solid #10b981", borderRadius: "5px", color: "#fff", outline: "none" }} />
+                            ) : (
+                              <button onClick={() => !u.isAdmin && setEditingLimit({ id: u.id, field: "maxImages", value: u.maxImages?.toString() ?? "" })}
+                                title="Set image limit" style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "5px", border: "1px solid #2a2a2a",
+                                  backgroundColor: "#161616", color: u.maxImages != null ? "#10b981" : "#555", cursor: "pointer", whiteSpace: "nowrap" }}>
+                                {u.maxImages != null ? `≤${u.maxImages}I` : "∞I"}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td style={td}>
+                        {!u.isAdmin && (
+                          <button onClick={() => deleteUser(u.id, u.email)} disabled={updating === u.id}
+                            style={{ fontSize: "12px", padding: "5px 12px", backgroundColor: "transparent", color: "#ef4444",
+                              border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", cursor: "pointer",
+                              opacity: updating === u.id ? 0.5 : 1, fontFamily: "inherit", transition: "background 0.15s" }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)")}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {pagedUsers.length === 0 && (
+                    <tr><td colSpan={10} style={{ ...td, textAlign: "center", color: "#444", padding: "40px" }}>No users found</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px",
+                borderTop: "1px solid #1e1e1e", backgroundColor: "#0d0d0d" }}>
+                <span style={{ fontSize: "12px", color: "#444" }}>
+                  Page {page} of {totalPages} · {filteredUsers.length} users
+                </span>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                    style={{ padding: "5px 12px", fontSize: "12px", borderRadius: "6px", border: "1px solid #222",
+                      backgroundColor: "#111", color: page === 1 ? "#333" : "#aaa", cursor: page === 1 ? "default" : "pointer", fontFamily: "inherit" }}>
+                    ← Prev
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                    <button key={p} onClick={() => setPage(p)}
+                      style={{ padding: "5px 10px", fontSize: "12px", borderRadius: "6px", border: "1px solid #222",
+                        backgroundColor: p === page ? "#fff" : "#111", color: p === page ? "#000" : "#666",
+                        cursor: "pointer", fontFamily: "inherit", fontWeight: p === page ? 700 : 400 }}>
+                      {p}
+                    </button>
+                  ))}
+                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                    style={{ padding: "5px 12px", fontSize: "12px", borderRadius: "6px", border: "1px solid #222",
+                      backgroundColor: "#111", color: page === totalPages ? "#333" : "#aaa", cursor: page === totalPages ? "default" : "pointer", fontFamily: "inherit" }}>
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
