@@ -21,7 +21,14 @@ function LoginForm() {
     if (res?.error) {
       setError(res.error === "CredentialsSignin" ? "Invalid email or password." : res.error);
     } else {
-      router.push("/");
+      // Fetch session to check if admin
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+      if (session?.user?.isAdmin) {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
       router.refresh();
     }
   };

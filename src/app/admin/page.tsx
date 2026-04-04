@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { format } from "date-fns";
 import { useToast } from "@/components/Toast";
@@ -20,9 +19,16 @@ interface AdminUser {
 
 type Tab = "overview" | "users";
 
+const S = {
+  card: { backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "10px", padding: "20px" } as React.CSSProperties,
+  label: { fontSize: "11px", color: "#666", fontWeight: 600, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: "8px" },
+  value: { fontSize: "30px", fontWeight: 800, lineHeight: 1 },
+  th: { padding: "10px 14px", fontWeight: 500, textAlign: "left" as const, color: "#666", fontSize: "11px", textTransform: "uppercase" as const, letterSpacing: "0.05em", whiteSpace: "nowrap" as const, backgroundColor: "#161616", borderBottom: "1px solid #2a2a2a" },
+  td: { padding: "12px 14px", borderBottom: "1px solid #1e1e1e", fontSize: "13px" },
+};
+
 export default function AdminPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const { showToast } = useToast();
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -31,13 +37,6 @@ export default function AdminPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
-
-  const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin;
-
-  useEffect(() => {
-    if (status === "unauthenticated") { router.push("/login"); return; }
-    if (status === "authenticated" && !isAdmin) { router.push("/"); }
-  }, [status, isAdmin, router]);
 
   const loadStats = useCallback(async () => {
     const res = await fetch("/api/admin/stats");
@@ -50,10 +49,9 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin) return;
     setIsLoading(true);
     Promise.all([loadStats(), loadUsers()]).finally(() => setIsLoading(false));
-  }, [isAdmin, loadStats, loadUsers]);
+  }, [loadStats, loadUsers]);
 
   const patch = async (userId: string, data: Record<string, boolean>) => {
     setUpdating(userId);
@@ -70,7 +68,7 @@ export default function AdminPage() {
   };
 
   const deleteUser = async (userId: string, email: string) => {
-    if (!window.confirm(`Delete user ${email} and ALL their data? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete ${email} and ALL their data? Cannot be undone.`)) return;
     setUpdating(userId);
     try {
       const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
@@ -83,156 +81,146 @@ export default function AdminPage() {
     finally { setUpdating(null); }
   };
 
-  if (status === "loading" || isLoading) {
-    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", color: "var(--text-secondary)" }}>Loading admin panel...</div>;
-  }
-
-  if (!isAdmin) return null;
-
   const filteredUsers = users.filter(u =>
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     (u.name ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const StatCard = ({ label, value, color }: { label: string; value: number; color?: string }) => (
-    <div style={{ padding: "20px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px" }}>
-      <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>{label}</div>
-      <div style={{ fontSize: "28px", fontWeight: 800, color: color ?? "var(--text-primary)" }}>{value.toLocaleString()}</div>
-    </div>
-  );
-
   const Toggle = ({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) => (
-    <button
-      type="button"
-      onClick={onChange}
-      disabled={disabled}
-      style={{
-        width: "36px", height: "20px", borderRadius: "10px", border: "none", cursor: disabled ? "default" : "pointer",
-        backgroundColor: checked ? "#0f7b6c" : "var(--border-color)",
-        position: "relative", transition: "background 0.2s", flexShrink: 0,
-        opacity: disabled ? 0.5 : 1,
-      }}
-    >
-      <span style={{
-        position: "absolute", top: "2px", left: checked ? "18px" : "2px",
-        width: "16px", height: "16px", borderRadius: "50%", backgroundColor: "#fff",
-        transition: "left 0.2s",
-      }} />
+    <button type="button" onClick={onChange} disabled={disabled}
+      style={{ width: "38px", height: "22px", borderRadius: "11px", border: "none", cursor: disabled ? "default" : "pointer", backgroundColor: checked ? "#10b981" : "#333", position: "relative", transition: "background 0.2s", flexShrink: 0, opacity: disabled ? 0.4 : 1 }}>
+      <span style={{ position: "absolute", top: "3px", left: checked ? "19px" : "3px", width: "16px", height: "16px", borderRadius: "50%", backgroundColor: "#fff", transition: "left 0.2s" }} />
     </button>
   );
 
+  if (isLoading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", color: "#666", fontSize: "14px" }}>
+      Loading...
+    </div>
+  );
+
   return (
-    <div style={{ paddingTop: "16px", paddingBottom: "80px" }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-        <div style={{ width: "36px", height: "36px", borderRadius: "8px", backgroundColor: "#eb5757", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          </svg>
-        </div>
-        <div>
-          <div style={{ fontSize: "20px", fontWeight: 800 }}>Admin Panel</div>
-          <div style={{ fontSize: "13px", color: "var(--text-secondary)" }}>TradeSync administration</div>
-        </div>
+    <div>
+      {/* Page title */}
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontSize: "24px", fontWeight: 800, margin: 0, color: "#fff" }}>Dashboard</h1>
+        <p style={{ color: "#666", fontSize: "13px", margin: "4px 0 0" }}>
+          {format(new Date(), "EEEE, MMMM d, yyyy")} · Logged in as {session?.user?.email}
+        </p>
       </div>
 
+      {/* Stat cards */}
+      {stats && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "12px", marginBottom: "28px" }}>
+          {[
+            { label: "Total Users", value: stats.totalUsers, color: "#fff" },
+            { label: "New This Week", value: stats.recentUsers, color: "#10b981" },
+            { label: "Blocked", value: stats.blockedUsers, color: stats.blockedUsers > 0 ? "#eb5757" : "#fff" },
+            { label: "Total Trades", value: stats.totalTrades, color: "#fff" },
+            { label: "Screenshots", value: stats.totalImages, color: "#fff" },
+            { label: "Journal Entries", value: stats.totalJournals, color: "#fff" },
+          ].map(c => (
+            <div key={c.label} style={S.card}>
+              <div style={S.label}>{c.label}</div>
+              <div style={{ ...S.value, color: c.color }}>{c.value.toLocaleString()}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Tabs */}
-      <div style={{ display: "flex", borderBottom: "2px solid var(--border-color)", marginBottom: "24px" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #2a2a2a", marginBottom: "20px", gap: "0" }}>
         {(["overview", "users"] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: "10px 24px", fontSize: "14px", fontWeight: tab === t ? 600 : 400,
-            color: tab === t ? "var(--text-primary)" : "var(--text-secondary)",
-            background: "none", borderTop: "none", borderLeft: "none", borderRight: "none",
-            borderBottom: tab === t ? "2px solid var(--text-primary)" : "2px solid transparent",
-            cursor: "pointer", marginBottom: "-2px", fontFamily: "var(--font-family)",
-            textTransform: "capitalize",
-          }}>{t}</button>
+            padding: "10px 20px", fontSize: "13px", fontWeight: tab === t ? 600 : 400,
+            color: tab === t ? "#fff" : "#666", background: "none",
+            borderTop: "none", borderLeft: "none", borderRight: "none",
+            borderBottom: tab === t ? "2px solid #fff" : "2px solid transparent",
+            cursor: "pointer", marginBottom: "-1px", fontFamily: "inherit", textTransform: "capitalize",
+          }}>{t === "overview" ? "Overview" : `Users (${users.length})`}</button>
         ))}
       </div>
 
-      {/* Overview tab */}
+      {/* Overview */}
       {tab === "overview" && stats && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px" }}>
-            <StatCard label="Total Users" value={stats.totalUsers} />
-            <StatCard label="New This Week" value={stats.recentUsers} color="#0f7b6c" />
-            <StatCard label="Blocked Users" value={stats.blockedUsers} color={stats.blockedUsers > 0 ? "#eb5757" : undefined} />
-            <StatCard label="Total Trades" value={stats.totalTrades} />
-            <StatCard label="Total Images" value={stats.totalImages} />
-            <StatCard label="Journal Entries" value={stats.totalJournals} />
-          </div>
-
-          <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "20px" }}>
-            <div style={{ fontSize: "14px", fontWeight: 600, marginBottom: "12px" }}>Quick Stats</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div style={S.card}>
+            <div style={{ ...S.label, marginBottom: "16px" }}>Platform Summary</div>
             {[
-              { label: "Avg trades per user", value: stats.totalUsers > 0 ? (stats.totalTrades / stats.totalUsers).toFixed(1) : "0" },
-              { label: "Avg images per user", value: stats.totalUsers > 0 ? (stats.totalImages / stats.totalUsers).toFixed(1) : "0" },
-              { label: "Avg journal entries per user", value: stats.totalUsers > 0 ? (stats.totalJournals / stats.totalUsers).toFixed(1) : "0" },
+              { label: "Avg trades / user", value: stats.totalUsers > 0 ? (stats.totalTrades / stats.totalUsers).toFixed(1) : "0" },
+              { label: "Avg images / user", value: stats.totalUsers > 0 ? (stats.totalImages / stats.totalUsers).toFixed(1) : "0" },
+              { label: "Avg journal entries / user", value: stats.totalUsers > 0 ? (stats.totalJournals / stats.totalUsers).toFixed(1) : "0" },
+              { label: "Active users (not blocked)", value: (stats.totalUsers - stats.blockedUsers).toString() },
             ].map(r => (
-              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border-color)" }}>
-                <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>{r.label}</span>
-                <span style={{ fontSize: "14px", fontWeight: 600 }}>{r.value}</span>
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid #222" }}>
+                <span style={{ fontSize: "13px", color: "#888" }}>{r.label}</span>
+                <span style={{ fontSize: "13px", fontWeight: 600, color: "#fff" }}>{r.value}</span>
+              </div>
+            ))}
+          </div>
+          <div style={S.card}>
+            <div style={{ ...S.label, marginBottom: "16px" }}>Recent Users</div>
+            {users.slice(0, 6).map(u => (
+              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: "1px solid #222" }}>
+                <div>
+                  <div style={{ fontSize: "13px", fontWeight: 500, color: "#fff" }}>{u.name || u.email.split("@")[0]}</div>
+                  <div style={{ fontSize: "11px", color: "#666" }}>{u.email}</div>
+                </div>
+                <div style={{ fontSize: "11px", color: "#555" }}>{format(new Date(u.createdAt), "MMM d")}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Users tab */}
+      {/* Users */}
       {tab === "users" && (
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-            <input
-              type="text" value={search} onChange={e => setSearch(e.target.value)}
-              className="notion-input" placeholder="Search by name or email..."
-              style={{ maxWidth: "300px", padding: "7px 12px", fontSize: "13px" }}
-            />
-            <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>{filteredUsers.length} users</span>
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search users..."
+              style={{ padding: "8px 14px", fontSize: "13px", backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: "7px", color: "#fff", outline: "none", width: "260px" }} />
+            <span style={{ fontSize: "12px", color: "#666" }}>{filteredUsers.length} users</span>
           </div>
 
-          <div style={{ overflowX: "auto", border: "1px solid var(--border-color)", borderRadius: "10px" }}>
+          <div style={{ overflowX: "auto", border: "1px solid #2a2a2a", borderRadius: "10px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
-                <tr style={{ backgroundColor: "var(--bg-secondary)", borderBottom: "1px solid var(--border-color)" }}>
-                  {["User", "Joined", "Trades", "Images", "Add Trades", "Analytics", "Export", "Blocked", "Actions"].map(h => (
-                    <th key={h} style={{ padding: "10px 12px", fontWeight: 500, textAlign: "left", color: "var(--text-secondary)", whiteSpace: "nowrap", fontSize: "12px" }}>{h}</th>
+                <tr>
+                  {["User", "Joined", "Trades", "Images", "Add Trades", "Analytics", "Export", "Blocked", ""].map(h => (
+                    <th key={h} style={S.th}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u, i) => (
-                  <tr key={u.id} className="notion-table-row" style={{ borderBottom: i < filteredUsers.length - 1 ? "1px solid var(--border-color)" : "none" }}>
-                    <td style={{ padding: "10px 12px" }}>
-                      <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
-                        {u.name || u.email.split("@")[0]}
-                        {u.isAdmin && <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "4px", backgroundColor: "#eb5757", color: "#fff", fontWeight: 700 }}>ADMIN</span>}
-                        {u.isBlocked && <span style={{ fontSize: "10px", padding: "1px 6px", borderRadius: "4px", backgroundColor: "#f97316", color: "#fff", fontWeight: 700 }}>BLOCKED</span>}
+                {filteredUsers.map(u => (
+                  <tr key={u.id} style={{ backgroundColor: u.isBlocked ? "rgba(235,87,87,0.04)" : "transparent" }}>
+                    <td style={S.td}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={{ width: "28px", height: "28px", borderRadius: "50%", backgroundColor: "#2a2a2a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 700, color: "#888", flexShrink: 0 }}>
+                          {(u.name || u.email)[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, color: "#fff", display: "flex", alignItems: "center", gap: "5px" }}>
+                            {u.name || u.email.split("@")[0]}
+                            {u.isAdmin && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "#eb5757", color: "#fff" }}>ADMIN</span>}
+                            {u.isBlocked && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "#f97316", color: "#fff" }}>BLOCKED</span>}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#555" }}>{u.email}</div>
+                        </div>
                       </div>
-                      <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>{u.email}</div>
                     </td>
-                    <td style={{ padding: "10px 12px", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{format(new Date(u.createdAt), "MMM d, yyyy")}</td>
-                    <td style={{ padding: "10px 12px" }}>{u.tradeCount}</td>
-                    <td style={{ padding: "10px 12px" }}>{u.imageCount}</td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <Toggle checked={u.canAddTrades} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canAddTrades: !u.canAddTrades })} />
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <Toggle checked={u.canViewAnalytics} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canViewAnalytics: !u.canViewAnalytics })} />
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <Toggle checked={u.canExport} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canExport: !u.canExport })} />
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
-                      <Toggle checked={u.isBlocked} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { isBlocked: !u.isBlocked })} />
-                    </td>
-                    <td style={{ padding: "10px 12px" }}>
+                    <td style={{ ...S.td, color: "#666", whiteSpace: "nowrap" }}>{format(new Date(u.createdAt), "MMM d, yyyy")}</td>
+                    <td style={{ ...S.td, color: "#aaa" }}>{u.tradeCount}</td>
+                    <td style={{ ...S.td, color: "#aaa" }}>{u.imageCount}</td>
+                    <td style={S.td}><Toggle checked={u.canAddTrades} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canAddTrades: !u.canAddTrades })} /></td>
+                    <td style={S.td}><Toggle checked={u.canViewAnalytics} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canViewAnalytics: !u.canViewAnalytics })} /></td>
+                    <td style={S.td}><Toggle checked={u.canExport} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canExport: !u.canExport })} /></td>
+                    <td style={S.td}><Toggle checked={u.isBlocked} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { isBlocked: !u.isBlocked })} /></td>
+                    <td style={S.td}>
                       {!u.isAdmin && (
-                        <button
-                          onClick={() => deleteUser(u.id, u.email)}
-                          disabled={updating === u.id}
-                          className="notion-button"
-                          style={{ fontSize: "12px", padding: "3px 10px", backgroundColor: "#eb5757", color: "#fff", border: "none", opacity: updating === u.id ? 0.6 : 1 }}
-                        >
+                        <button onClick={() => deleteUser(u.id, u.email)} disabled={updating === u.id}
+                          style={{ fontSize: "12px", padding: "4px 10px", backgroundColor: "rgba(235,87,87,0.15)", color: "#eb5757", border: "1px solid rgba(235,87,87,0.3)", borderRadius: "5px", cursor: "pointer", opacity: updating === u.id ? 0.5 : 1 }}>
                           Delete
                         </button>
                       )}
