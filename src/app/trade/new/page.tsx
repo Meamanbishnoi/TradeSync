@@ -8,6 +8,8 @@ import StarRating from "@/components/StarRating";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useToast } from "@/components/Toast";
 import { POINT_MULTIPLIERS, DEFAULT_SESSIONS } from "@/lib/constants";
+import TemplateManager from "@/components/TemplateManager";
+import type { TradeTemplate } from "@/app/api/templates/route";
 
 function calcPnl(entry: string, exit: string, contracts: string, instrument: string, direction: string): string {
   const e = parseFloat(entry), x = parseFloat(exit), c = parseFloat(contracts) || 1;
@@ -125,6 +127,18 @@ export default function NewTradePage() {
     if (name === "pnl") setPnlAutoCalc(false);
   }, []);
 
+  const applyTemplate = (t: TradeTemplate) => {
+    setFormData(prev => ({
+      ...prev,
+      instrument: t.instrument || prev.instrument,
+      direction: t.direction || prev.direction,
+      session: t.session || prev.session,
+      contractSize: t.contractSize || prev.contractSize,
+      setup: t.setup || prev.setup,
+    }));
+    if (t.tags.length > 0) setTags(t.tags);
+  };
+
   const fieldLabel = (text: string, extra?: React.ReactNode) => (
     <label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>
       {text}{extra}
@@ -140,7 +154,20 @@ export default function NewTradePage() {
         </button>
       </div>
 
-      <h1 style={{ fontSize: "32px", marginBottom: "28px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>New Trade</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>
+        <h1 style={{ fontSize: "32px", margin: 0 }}>New Trade</h1>
+        <TemplateManager
+          currentForm={{
+            instrument: formData.instrument,
+            direction: formData.direction,
+            session: formData.session,
+            contractSize: formData.contractSize,
+            setup: formData.setup,
+            tags,
+          }}
+          onApply={applyTemplate}
+        />
+      </div>
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }} className="trade-form-grid">
