@@ -130,38 +130,40 @@ export default function GalleryPage() {
       {/* Filter bar */}
       <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "14px 16px", marginBottom: "16px" }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end" }}>
-          <div>
+          <div style={{ flex: "1 1 90px", minWidth: "80px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Instrument</label>
             <input type="text" value={filterInstrument} onChange={e => setFilterInstrument(e.target.value)}
-              className="notion-input" placeholder="e.g. NQ" style={{ width: "100px", padding: "5px 10px", fontSize: "13px" }} />
+              className="notion-input" placeholder="e.g. NQ" style={{ padding: "6px 10px", fontSize: "13px" }} />
           </div>
-          <div>
+          <div style={{ flex: "1 1 90px", minWidth: "80px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>Direction</label>
             <select value={filterDirection} onChange={e => setFilterDirection(e.target.value)}
-              className="notion-input" style={{ width: "auto", padding: "5px 10px", fontSize: "13px" }}>
+              className="notion-input" style={{ padding: "6px 10px", fontSize: "13px" }}>
               <option value="">All</option>
               <option value="Long">Long</option>
               <option value="Short">Short</option>
             </select>
           </div>
-          <div>
+          <div style={{ flex: "1 1 120px", minWidth: "110px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>From</label>
             <input type="date" value={filterDateFrom} onChange={e => setFilterDateFrom(e.target.value)}
-              className="notion-input" style={{ width: "auto", padding: "5px 10px", fontSize: "13px" }} />
+              className="notion-input" style={{ padding: "6px 10px", fontSize: "13px" }} />
           </div>
-          <div>
+          <div style={{ flex: "1 1 120px", minWidth: "110px" }}>
             <label style={{ display: "block", fontSize: "12px", color: "var(--text-secondary)", marginBottom: "4px" }}>To</label>
             <input type="date" value={filterDateTo} onChange={e => setFilterDateTo(e.target.value)}
-              className="notion-input" style={{ width: "auto", padding: "5px 10px", fontSize: "13px" }} />
+              className="notion-input" style={{ padding: "6px 10px", fontSize: "13px" }} />
           </div>
-          <button onClick={applyFilters} className="notion-button notion-button-primary" style={{ padding: "6px 16px", fontSize: "13px" }}>
-            Filter
-          </button>
-          {hasFilters && (
-            <button onClick={clearFilters} className="notion-button" style={{ padding: "6px 12px", fontSize: "13px" }}>
-              Clear
+          <div style={{ display: "flex", gap: "8px", alignItems: "flex-end" }}>
+            <button onClick={applyFilters} className="notion-button notion-button-primary" style={{ padding: "7px 16px", fontSize: "13px" }}>
+              Filter
             </button>
-          )}
+            {hasFilters && (
+              <button onClick={clearFilters} className="notion-button" style={{ padding: "7px 12px", fontSize: "13px" }}>
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
