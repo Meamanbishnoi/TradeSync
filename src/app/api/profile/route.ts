@@ -30,7 +30,13 @@ export async function GET() {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ ...user, hasPassword: !!(user.password && user.password.length > 0), password: undefined });
+    // avatarId added via raw SQL — fetch separately
+    const avatarRows = await prisma.$queryRaw<{ avatarId: string | null }[]>`
+      SELECT "avatarId" FROM "User" WHERE id = ${userId} LIMIT 1
+    `;
+    const avatarId = avatarRows[0]?.avatarId ?? null;
+
+    return NextResponse.json({ ...user, hasPassword: !!(user.password && user.password.length > 0), password: undefined, avatarId });
   } catch (error) {
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }

@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useToast } from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
 import SecurityQuestionSetup from "@/components/SecurityQuestionSetup";
+import AvatarPicker from "@/components/AvatarPicker";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [hasPassword, setHasPassword] = useState(false);
   const [securityQuestion, setSecurityQuestion] = useState<string | null>(null);
+  const [avatarId, setAvatarId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -46,6 +48,7 @@ export default function ProfilePage() {
           customSessions: data.customSessions ? JSON.parse(data.customSessions).join(", ") : "",
         });
         setHasPassword(!!data.hasPassword);
+        setAvatarId(data.avatarId ?? null);
         // Fetch security question status
         fetch("/api/profile/security-question").then(r => r.json()).then(d => {
           setSecurityQuestion(d.question ?? null);
@@ -176,6 +179,15 @@ export default function ProfilePage() {
       </div>
 
       <h1 style={{ fontSize: "38px", marginBottom: "32px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>Your Profile</h1>
+
+      {/* Avatar section */}
+      <div style={{ marginBottom: "32px" }}>
+        <h2 style={{ fontSize: "20px", marginBottom: "4px" }}>Avatar</h2>
+        <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "16px" }}>Choose an avatar that represents you.</p>
+        <AvatarPicker currentAvatarId={avatarId} name={formData.name || formData.email} onSaved={id => setAvatarId(id ?? null)} />
+      </div>
+
+      <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", marginBottom: "24px" }} />
 
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
 

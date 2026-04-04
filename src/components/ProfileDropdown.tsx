@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import Avatar from "@/components/Avatar";
 
 interface ProfileDropdownProps {
   displayName: string | null;
@@ -10,9 +11,15 @@ interface ProfileDropdownProps {
 
 export default function ProfileDropdown({ displayName }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [avatarId, setAvatarId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  useEffect(() => {
+    fetch("/api/profile").then(r => r.json()).then(d => {
+      setAvatarId(d.avatarId ?? null);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -44,15 +51,8 @@ export default function ProfileDropdown({ displayName }: ProfileDropdownProps) {
         onMouseEnter={e => { if (!isOpen) e.currentTarget.style.background = "var(--bg-hover)"; }}
         onMouseLeave={e => { if (!isOpen) e.currentTarget.style.background = "transparent"; }}
       >
-        {/* Avatar circle with initials */}
-        <div style={{
-          width: "26px", height: "26px", borderRadius: "50%",
-          backgroundColor: "var(--text-primary)", color: "var(--bg-color)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "11px", fontWeight: 700, flexShrink: 0, letterSpacing: "0.02em",
-        }}>
-          {(displayName ?? "U").slice(0, 2).toUpperCase()}
-        </div>
+        {/* Avatar */}
+        <Avatar avatarId={avatarId} name={displayName} size={26} />
         <span style={{ fontSize: "13px", maxWidth: "80px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {displayName || "User"}
         </span>
