@@ -7,18 +7,13 @@ import Avatar from "@/components/Avatar";
 
 interface ProfileDropdownProps {
   displayName: string | null;
+  avatarId?: string | null;
 }
 
-export default function ProfileDropdown({ displayName }: ProfileDropdownProps) {
+export default function ProfileDropdown({ displayName, avatarId: initialAvatarId }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [avatarId, setAvatarId] = useState<string | null>(null);
+  const [avatarId] = useState(initialAvatarId ?? null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetch("/api/profile").then(r => r.json()).then(d => {
-      setAvatarId(d.avatarId ?? null);
-    }).catch(() => {});
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
