@@ -10,8 +10,6 @@ import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
 import SecurityQuestionPrompt from "@/components/SecurityQuestionPrompt";
 
-import { prisma } from "@/lib/prisma";
-
 export const dynamic = "force-dynamic";
 
 export const viewport: Viewport = {
@@ -38,17 +36,7 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession(authOptions);
   const displayName = session?.user?.name || session?.user?.email || null;
-
-  // Fetch avatarId server-side to avoid flash on load
-  let avatarId: string | null = null;
-  if (session?.user?.id) {
-    try {
-      const rows = await prisma.$queryRaw<{ avatarId: string | null }[]>`
-        SELECT "avatarId" FROM "User" WHERE id = ${session.user.id} LIMIT 1
-      `;
-      avatarId = rows[0]?.avatarId ?? null;
-    } catch {}
-  }
+  const avatarId = session?.user?.avatarId ?? null;
 
   return (
     <html lang="en" data-theme="" suppressHydrationWarning>

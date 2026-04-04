@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AVATARS } from "@/components/Avatar";
 import Avatar from "@/components/Avatar";
 import { useToast } from "@/components/Toast";
+import { useSession } from "next-auth/react";
 
 interface Props {
   currentAvatarId?: string | null;
@@ -13,6 +14,7 @@ interface Props {
 
 export default function AvatarPicker({ currentAvatarId, name, onSaved }: Props) {
   const { showToast } = useToast();
+  const { update: updateSession } = useSession();
   const [selected, setSelected] = useState(currentAvatarId ?? null);
   const [isSaving, setIsSaving] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
@@ -27,6 +29,7 @@ export default function AvatarPicker({ currentAvatarId, name, onSaved }: Props) 
         body: JSON.stringify({ avatarId: selected }),
       });
       if (!res.ok) throw new Error((await res.json()).message);
+      await updateSession({ avatarId: selected });
       showToast("Avatar updated", "success");
       onSaved?.(selected);
     } catch (err: unknown) {

@@ -66,10 +66,17 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.name = user.name;
+        // Fetch avatarId once on login and store in token
+        try {
+          const rows = await prisma.$queryRaw<{ avatarId: string | null }[]>`
+            SELECT "avatarId" FROM "User" WHERE id = ${user.id} LIMIT 1
+          `;
+          token.avatarId = rows[0]?.avatarId ?? null;
+        } catch { token.avatarId = null; }
       }
-      // On session update or if name is missing, fetch from DB
-      if (trigger === "update" && sessionData?.name) {
-        token.name = sessionData.name;
+      if (trigger === "update") {
+        if (sessionData?.name) token.name = sessionData.name;
+        if (sessionData?.avatarId !== undefined) token.avatarId = sessionData.avatarId;
       }
       return token;
     },
@@ -77,6 +84,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id;
         if (token.name) session.user.name = token.name as string;
+        (session.user as { avatarId?: string | null }).avatarId = (token.avatarId as string | null) ?? null;
       }
       return session;
     },
