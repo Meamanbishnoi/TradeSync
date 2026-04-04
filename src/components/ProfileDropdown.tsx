@@ -12,8 +12,25 @@ interface ProfileDropdownProps {
 
 export default function ProfileDropdown({ displayName, avatarId: initialAvatarId }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [avatarId] = useState(initialAvatarId ?? null);
+  const [avatarId, setAvatarId] = useState(initialAvatarId ?? null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Sync when prop changes (e.g. after updateSession)
+  useEffect(() => {
+    if (initialAvatarId !== undefined) {
+      setAvatarId(initialAvatarId ?? null);
+    }
+  }, [initialAvatarId]);
+
+  // Fallback: if prop is null (old JWT), fetch once from API
+  useEffect(() => {
+    if (initialAvatarId === null || initialAvatarId === undefined) {
+      fetch("/api/profile/avatar-id")
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.avatarId) setAvatarId(d.avatarId); })
+        .catch(() => {});
+    }
+  }, [initialAvatarId]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
