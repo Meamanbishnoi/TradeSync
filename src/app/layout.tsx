@@ -8,6 +8,7 @@ import ProfileDropdown from "@/components/ProfileDropdown";
 import ThemeToggle from "@/components/ThemeToggle";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import SecurityQuestionPrompt from "@/components/SecurityQuestionPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -101,6 +102,7 @@ export default async function RootLayout({
             </div>
           </div>
           {session && <MobileNav />}
+          {session && <SecurityQuestionPrompt />}
         </Providers>
       </body>
     </html>

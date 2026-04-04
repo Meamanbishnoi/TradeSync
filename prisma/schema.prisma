@@ -17,6 +17,8 @@ model User {
   emailVerified     Boolean        @default(false)
   verifyToken       String?
   verifyTokenExp    DateTime?
+  securityQuestion  String?
+  securityAnswer    String?        // bcrypt hashed
   trades            Trade[]
   dailyJournals     DailyJournal[]
   createdAt         DateTime       @default(now())

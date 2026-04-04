@@ -95,9 +95,9 @@ function LoginForm() {
         </button>
         <p style={{ textAlign: "center", fontSize: "12px", color: "var(--text-secondary)", margin: "4px 0 0" }}>
           Forgot your password?{" "}
-          <button type="button" onClick={() => signIn("google", { callbackUrl: "/" })} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--accent-color)", fontSize: "12px", padding: 0, textDecoration: "underline" }}>
-            Sign in with Google instead
-          </button>
+          <Link href="/forgot-password" style={{ color: "var(--accent-color)", fontSize: "12px", textDecoration: "underline" }}>
+            Reset via security question
+          </Link>
         </p>
       </form>
 

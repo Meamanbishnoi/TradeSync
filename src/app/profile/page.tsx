@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/components/Toast";
 import ConfirmModal from "@/components/ConfirmModal";
+import SecurityQuestionSetup from "@/components/SecurityQuestionSetup";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function ProfilePage() {
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [hasPassword, setHasPassword] = useState(false);
+  const [securityQuestion, setSecurityQuestion] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -44,6 +46,10 @@ export default function ProfilePage() {
           customSessions: data.customSessions ? JSON.parse(data.customSessions).join(", ") : "",
         });
         setHasPassword(!!data.hasPassword);
+        // Fetch security question status
+        fetch("/api/profile/security-question").then(r => r.json()).then(d => {
+          setSecurityQuestion(d.question ?? null);
+        }).catch(() => {});
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "An error occurred loading the profile";
         showToast(msg, "error");
@@ -243,6 +249,21 @@ export default function ProfilePage() {
             </button>
           </div>
         </div>
+
+        <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "16px 0" }} />
+        
+        <h2 style={{ fontSize: "22px", marginBottom: "8px" }}>Security Question</h2>
+        <p style={{ fontSize: "14px", color: "var(--text-secondary)", marginBottom: "16px" }}>
+          {securityQuestion
+            ? `Current question: "${securityQuestion}"`
+            : "Set a security question so you can reset your password if you forget it."}
+        </p>
+        <SecurityQuestionSetup
+          currentQuestion={securityQuestion}
+          onSaved={() => {
+            fetch("/api/profile/security-question").then(r => r.json()).then(d => setSecurityQuestion(d.question ?? null)).catch(() => {});
+          }}
+        />
 
         <hr style={{ border: "none", borderTop: "1px solid var(--border-color)", margin: "16px 0" }} />
         
