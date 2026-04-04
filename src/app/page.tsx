@@ -6,7 +6,6 @@ import EquityCurve from "@/components/EquityCurve";
 import { format } from "date-fns";
 import FloatingAddButton from "@/components/FloatingAddButton";
 import DashboardClient from "@/components/DashboardClient";
-import WeeklyBarChart from "@/components/WeeklyBarChart";
 
 export const dynamic = "force-dynamic";
 
@@ -158,29 +157,22 @@ export default async function Dashboard() {
 
       {/* Main Grid: equity curve left, recent trades right */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "32px", alignItems: "stretch" }} className="dashboard-grid">
-        {/* Equity Curve card */}
-        <div className="equity-curve-card" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "12px", display: "flex", flexDirection: "column", minHeight: "380px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexShrink: 0 }}>
-            <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
-            <Link href="/analytics" style={{ fontSize: "12px", color: "var(--accent-color)" }}>Full analytics →</Link>
-          </div>
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "stretch" }}>
-            {trades.length > 1 ? (
-              <EquityCurve trades={serializedTrades} />
-            ) : (
-              <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
-                Log more trades to see your curve.
-              </div>
-            )}
-          </div>
-          {/* Last 7 days bar chart */}
-          {trades.length > 0 && (
-            <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px solid var(--border-color)" }}>
-              <div style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>Last 7 Days</div>
-              <WeeklyBarChart trades={serializedTrades} />
+          {/* Equity Curve card */}
+          <div className="equity-curve-card" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "12px", display: "flex", flexDirection: "column", minHeight: "380px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px", flexShrink: 0 }}>
+              <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>Performance</span>
+              <Link href="/analytics" style={{ fontSize: "12px", color: "var(--accent-color)" }}>Full analytics →</Link>
             </div>
-          )}
-        </div>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "stretch" }}>
+              {trades.length > 1 ? (
+                <EquityCurve trades={serializedTrades} />
+              ) : (
+                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: "14px" }}>
+                  Log more trades to see your curve.
+                </div>
+              )}
+            </div>
+          </div>
 
         {/* Recent Trades card */}
         <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "12px", padding: "12px", display: "flex", flexDirection: "column", minHeight: "380px" }}>

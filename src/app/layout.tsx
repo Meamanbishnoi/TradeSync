@@ -51,7 +51,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning>
+    <html lang="en" data-theme="" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
@@ -64,7 +64,9 @@ export default async function RootLayout({
               } else {
                 document.documentElement.setAttribute('data-theme', 'light');
               }
-            } catch(e) {}
+            } catch(e) {
+              document.documentElement.setAttribute('data-theme', 'light');
+            }
           })();
         `}} />
       </head>
