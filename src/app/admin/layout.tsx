@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import AdminLogout from "@/components/AdminLogout";
 
 export const dynamic = "force-dynamic";
@@ -41,14 +40,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "12px", color: "#444" }}>{session.user?.email}</span>
-          <Link href="/" style={{ fontSize: "12px", color: "#555", textDecoration: "none",
-            padding: "5px 12px", borderRadius: "6px", border: "1px solid #1e1e1e",
-            transition: "border-color 0.15s", display: "flex", alignItems: "center", gap: "5px" }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-            App
-          </Link>
           <AdminLogout />
         </div>
       </header>

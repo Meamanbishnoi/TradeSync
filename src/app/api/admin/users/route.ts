@@ -15,11 +15,24 @@ export async function GET() {
   });
 
   // Fetch admin columns via raw SQL
-  const adminCols = await prisma.$queryRaw<{
+  let adminCols: {
     id: string; isAdmin: boolean; isBlocked: boolean;
     canAddTrades: boolean; canViewAnalytics: boolean; canExport: boolean;
     maxTrades: number | null; maxImages: number | null;
-  }[]>`SELECT id, "isAdmin", "isBlocked", "canAddTrades", "canViewAnalytics", "canExport", "maxTrades", "maxImages" FROM "User"`;
+  }[] = [];
+  try {
+    adminCols = await prisma.$queryRaw`SELECT id, "isAdmin", "isBlocked", "canAddTrades", "canViewAnalytics", "canExport", "maxTrades", "maxImages" FROM "User"`;
+  } catch {
+    // maxTrades/maxImages columns may not exist yet — fall back without them
+    try {
+      const rows = await prisma.$queryRaw<{ id: string; isAdmin: boolean; isBlocked: boolean; canAddTrades: boolean; canViewAnalytics: boolean; canExport: boolean }[]>`
+        SELECT id, "isAdmin", "isBlocked", "canAddTrades", "canViewAnalytics", "canExport" FROM "User"
+      `;
+      adminCols = rows.map(r => ({ ...r, maxTrades: null, maxImages: null }));
+    } catch {
+      adminCols = [];
+    }
+  }
 
   const colMap = Object.fromEntries(adminCols.map(r => [r.id, r]));
 
