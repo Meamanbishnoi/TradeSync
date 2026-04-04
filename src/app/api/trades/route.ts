@@ -35,16 +35,21 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     // Check permissions from DB directly (source of truth)
-    const permRows = await prisma.$queryRaw<{
-      canAddTrades: boolean; isBlocked: boolean; maxTrades: number | null;
-    }[]>`SELECT "canAddTrades", "isBlocked", "maxTrades" FROM "User" WHERE id = ${userId} LIMIT 1`;
+    let perms: { canAddTrades: boolean; isBlocked: boolean; maxTrades: number | null } = { canAddTrades: true, isBlocked: false, maxTrades: null };
+    try {
+      const permRows = await prisma.$queryRaw<{
+        canAddTrades: boolean; isBlocked: boolean; maxTrades: number | null;
+      }[]>`SELECT "canAddTrades", "isBlocked", "maxTrades" FROM "User" WHERE id = ${userId} LIMIT 1`;
+      if (permRows[0]) perms = permRows[0];
+    } catch {
+      // columns may not exist yet, allow the trade
+    }
 
-    const perms = permRows[0];
-    if (perms?.isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
-    if (perms?.canAddTrades === false) return NextResponse.json({ message: "You don't have permission to add trades." }, { status: 403 });
+    if (perms.isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
+    if (perms.canAddTrades === false) return NextResponse.json({ message: "You don't have permission to add trades." }, { status: 403 });
 
     // Enforce trade limit
-    if (perms?.maxTrades != null) {
+    if (perms.maxTrades != null) {
       const count = await prisma.trade.count({ where: { userId } });
       if (count >= perms.maxTrades) {
         return NextResponse.json({ message: `Trade limit reached (${perms.maxTrades} trades max).` }, { status: 403 });

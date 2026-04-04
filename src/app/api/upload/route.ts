@@ -16,13 +16,21 @@ export async function POST(req: Request) {
     const userId = session.user.id;
 
     // Check image limit from DB
-    const permRows = await prisma.$queryRaw<{ isBlocked: boolean; maxImages: number | null }[]>`
-      SELECT "isBlocked", "maxImages" FROM "User" WHERE id = ${userId} LIMIT 1
-    `;
-    const perms = permRows[0];
-    if (perms?.isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
+    let isBlocked = false;
+    let maxImages: number | null = null;
+    try {
+      const permRows = await prisma.$queryRaw<{ isBlocked: boolean; maxImages: number | null }[]>`
+        SELECT "isBlocked", "maxImages" FROM "User" WHERE id = ${userId} LIMIT 1
+      `;
+      isBlocked = permRows[0]?.isBlocked ?? false;
+      maxImages = permRows[0]?.maxImages ?? null;
+    } catch {
+      // columns may not exist yet, skip limit check
+    }
 
-    if (perms?.maxImages != null) {
+    if (isBlocked) return NextResponse.json({ message: "Your account has been blocked." }, { status: 403 });
+
+    if (maxImages != null) {
       const tradesWithImages = await prisma.trade.findMany({
         where: { userId, NOT: { imageUrls: null } },
         select: { imageUrls: true },
@@ -31,8 +39,8 @@ export async function POST(req: Request) {
       for (const t of tradesWithImages) {
         try { totalImages += JSON.parse(t.imageUrls!).length; } catch {}
       }
-      if (totalImages >= perms.maxImages) {
-        return NextResponse.json({ message: `Image limit reached (${perms.maxImages} images max).` }, { status: 403 });
+      if (totalImages >= maxImages) {
+        return NextResponse.json({ message: `Image limit reached (${maxImages} images max).` }, { status: 403 });
       }
     }
 

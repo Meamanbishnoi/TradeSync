@@ -39,7 +39,6 @@ export default async function RootLayout({
   const displayName = session?.user?.name || session?.user?.email || null;
   const avatarId = session?.user?.avatarId ?? null;
   const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin ?? false;
-  const isBlocked = (session?.user as { isBlocked?: boolean })?.isBlocked ?? false;
 
   return (
     <html lang="en" data-theme="" suppressHydrationWarning>
@@ -67,7 +66,6 @@ export default async function RootLayout({
             // Admin: render children directly, admin layout handles its own chrome
             <>
               {children}
-              {session && isBlocked && <BlockedUserSignOut />}
             </>
           ) : (
           <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
@@ -117,7 +115,7 @@ export default async function RootLayout({
           )}
           {session && !isAdmin && <MobileNav />}
           {session && !isAdmin && <SecurityQuestionPrompt />}
-          {session && !isAdmin && isBlocked && <BlockedUserSignOut />}
+          {session && !isAdmin && <BlockedUserSignOut />}
         </Providers>
       </body>
     </html>

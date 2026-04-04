@@ -27,6 +27,25 @@ function calcRMultiple(entry: string, exit: string, stopLoss: string, direction:
   return (reward / risk).toFixed(2);
 }
 
+function RestrictedModal({ message, onBack }: { message: string; onBack: () => void }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "16px" }}>
+      <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "14px", padding: "36px 32px", maxWidth: "400px", width: "100%", textAlign: "center" }}>
+        <div style={{ width: "52px", height: "52px", borderRadius: "50%", backgroundColor: "rgba(235,87,87,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#eb5757" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+          </svg>
+        </div>
+        <h2 style={{ fontSize: "18px", fontWeight: 700, margin: "0 0 10px", color: "var(--text-primary)" }}>Access Restricted</h2>
+        <p style={{ fontSize: "14px", color: "var(--text-secondary)", margin: "0 0 24px", lineHeight: 1.6 }}>{message}</p>
+        <button onClick={onBack} className="notion-button notion-button-primary" style={{ padding: "9px 24px", width: "100%" }}>
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NewTradePage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -35,6 +54,8 @@ export default function NewTradePage() {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const tagInputRef = useRef<HTMLInputElement>(null);
+  const [restriction, setRestriction] = useState<string | null>(null);
+  const [permChecked, setPermChecked] = useState(false);
 
   const [formData, setFormData] = useState({
     instrument: "", direction: "",
@@ -50,6 +71,32 @@ export default function NewTradePage() {
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Check permissions from DB on mount
+  useEffect(() => {
+    fetch("/api/auth/check").then(r => r.json()).then(async (data) => {
+      if (data.isBlocked) {
+        setRestriction("Your account has been blocked by the administrator.");
+        setPermChecked(true);
+        return;
+      }
+      if (!data.canAddTrades) {
+        setRestriction("You have been restricted from adding trades by the administrator.");
+        setPermChecked(true);
+        return;
+      }
+      if (data.maxTrades != null) {
+        try {
+          const tr = await fetch("/api/trades");
+          const trades = await tr.json();
+          if (Array.isArray(trades) && trades.length >= data.maxTrades) {
+            setRestriction(`You have reached your trade limit of ${data.maxTrades} trades. Contact your administrator to increase the limit.`);
+          }
+        } catch {}
+      }
+      setPermChecked(true);
+    }).catch(() => setPermChecked(true));
+  }, []);
 
   useEffect(() => {
     setHasUnsavedChanges(
@@ -91,12 +138,15 @@ export default function NewTradePage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      let uploadedUrls: string[] = [];
+      const uploadedUrls: string[] = [];
       for (const file of newFiles) {
         const fd = new FormData(); fd.append("file", file);
         const r = await fetch("/api/upload", { method: "POST", body: fd });
         if (r.ok) { const { url } = await r.json(); uploadedUrls.push(url); }
-        else throw new Error("Failed to upload an image");
+        else {
+          const errData = await r.json().catch(() => ({}));
+          throw new Error(errData.message || "Failed to upload an image");
+        }
       }
       const res = await fetch("/api/trades", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -114,7 +164,10 @@ export default function NewTradePage() {
           tags,
         }),
       });
-      if (!res.ok) throw new Error("Failed to save trade");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Failed to save trade");
+      }
       showToast("Trade saved successfully", "success");
       router.push("/trades"); router.refresh();
     } catch (err: unknown) {
@@ -147,8 +200,13 @@ export default function NewTradePage() {
     </label>
   );
 
+  // Show restriction modal as overlay (don't block render, show on top)
   return (
     <div style={{ maxWidth: "800px", margin: "40px auto", paddingBottom: "100px" }}>
+      {restriction && permChecked && (
+        <RestrictedModal message={restriction} onBack={() => router.push("/trades")} />
+      )}
+
       <div style={{ marginBottom: "24px" }}>
         <button type="button" onClick={() => hasUnsavedChanges ? setShowExitConfirm(true) : router.push("/trades")}
           style={{ background: "none", border: "none", color: "var(--text-secondary)", fontSize: "16px", cursor: "pointer", padding: 0 }}>
@@ -159,14 +217,7 @@ export default function NewTradePage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "28px", borderBottom: "1px solid var(--border-color)", paddingBottom: "16px" }}>
         <h1 style={{ fontSize: "32px", margin: 0 }}>New Trade</h1>
         <TemplateManager
-          currentForm={{
-            instrument: formData.instrument,
-            direction: formData.direction,
-            session: formData.session,
-            contractSize: formData.contractSize,
-            setup: formData.setup,
-            tags,
-          }}
+          currentForm={{ instrument: formData.instrument, direction: formData.direction, session: formData.session, contractSize: formData.contractSize, setup: formData.setup, tags }}
           onApply={applyTemplate}
         />
       </div>
@@ -203,7 +254,6 @@ export default function NewTradePage() {
           </div>
         </div>
 
-        {/* Tags */}
         <div>
           <label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "8px" }}>Tags</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "8px" }}>
