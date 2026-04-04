@@ -59,6 +59,7 @@ export async function POST(req: Request) {
     }
 
     // ── 4. Re-upload images to Vercel Blob ───────────────────────────────
+    // Do this BEFORE the transaction so the transaction stays fast and doesn't time out
     const newUrlMap: Record<string, string> = {};
     const hasBlob = !!process.env.BLOB_READ_WRITE_TOKEN;
 
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
           const blob = await put(`tradesync/${filename}`, buf, { access: "public" });
           newUrlMap[filename] = blob.url;
         } catch {
-          // non-fatal
+          // non-fatal — continue without this image
         }
       }
     }
@@ -96,53 +97,52 @@ export async function POST(req: Request) {
       }
     };
 
-    // ── 5. Restore in a transaction ──────────────────────────────────────
+    // ── 5. Prepare all data before the transaction ───────────────────────
+    const tradeInserts = tradesData.map(t => ({
+      id: String(t.id),
+      userId,
+      instrument: String(t.instrument ?? ""),
+      direction: String(t.direction ?? "Long"),
+      date: t.date ? new Date(String(t.date)) : new Date(),
+      session: t.session ? String(t.session) : null,
+      entryPrice: Number(t.entryPrice ?? 0),
+      exitPrice: Number(t.exitPrice ?? 0),
+      stopLoss: t.stopLoss != null ? Number(t.stopLoss) : null,
+      pnl: Number(t.pnl ?? 0),
+      setup: t.setup ? String(t.setup) : null,
+      tags: t.tags ? String(t.tags) : null,
+      emotions: t.emotions ? String(t.emotions) : null,
+      notes: t.notes ? String(t.notes) : null,
+      imageUrls: remapUrls(t.imageUrls),
+      contractSize: t.contractSize != null ? Number(t.contractSize) : null,
+      rating: t.rating != null ? Number(t.rating) : null,
+      createdAt: t.createdAt ? new Date(String(t.createdAt)) : new Date(),
+      updatedAt: new Date(),
+    }));
+
+    const journalInserts = journalsData.map(j => ({
+      id: String(j.id),
+      userId,
+      date: String(j.date ?? ""),
+      prePlan: j.prePlan ? String(j.prePlan) : null,
+      review: j.review ? String(j.review) : null,
+      createdAt: j.createdAt ? new Date(String(j.createdAt)) : new Date(),
+      updatedAt: new Date(),
+    }));
+
+    // ── 6. Fast transaction — only DB operations, no async I/O ──────────
     await prisma.$transaction(async (tx) => {
-      // Delete existing data for this user
       await tx.trade.deleteMany({ where: { userId } });
       await tx.dailyJournal.deleteMany({ where: { userId } });
 
-      // Restore trades
-      if (tradesData.length > 0) {
-        const tradeInserts = tradesData.map(t => ({
-          id: String(t.id),
-          userId,
-          instrument: String(t.instrument ?? ""),
-          direction: String(t.direction ?? "Long"),
-          date: t.date ? new Date(String(t.date)) : new Date(),
-          session: t.session ? String(t.session) : null,
-          entryPrice: Number(t.entryPrice ?? 0),
-          exitPrice: Number(t.exitPrice ?? 0),
-          stopLoss: t.stopLoss != null ? Number(t.stopLoss) : null,
-          pnl: Number(t.pnl ?? 0),
-          setup: t.setup ? String(t.setup) : null,
-          tags: t.tags ? String(t.tags) : null,
-          emotions: t.emotions ? String(t.emotions) : null,
-          notes: t.notes ? String(t.notes) : null,
-          imageUrls: remapUrls(t.imageUrls),
-          contractSize: t.contractSize != null ? Number(t.contractSize) : null,
-          rating: t.rating != null ? Number(t.rating) : null,
-          createdAt: t.createdAt ? new Date(String(t.createdAt)) : new Date(),
-          updatedAt: new Date(),
-        }));
-
+      if (tradeInserts.length > 0) {
         await tx.trade.createMany({ data: tradeInserts, skipDuplicates: true });
       }
-
-      // Restore journals
-      if (journalsData.length > 0) {
-        const journalInserts = journalsData.map(j => ({
-          id: String(j.id),
-          userId,
-          date: String(j.date ?? ""),
-          prePlan: j.prePlan ? String(j.prePlan) : null,
-          review: j.review ? String(j.review) : null,
-          createdAt: j.createdAt ? new Date(String(j.createdAt)) : new Date(),
-          updatedAt: new Date(),
-        }));
-
+      if (journalInserts.length > 0) {
         await tx.dailyJournal.createMany({ data: journalInserts, skipDuplicates: true });
       }
+    }, {
+      timeout: 30000, // 30s max for the DB operations
     });
 
     return NextResponse.json({
