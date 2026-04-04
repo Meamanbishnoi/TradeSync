@@ -47,6 +47,7 @@ export default function EditTradePage() {
 
   const [customInstruments, setCustomInstruments] = useState<string[]>([]);
   const [customSessions, setCustomSessions] = useState<string[]>([]);
+  const [customSetups, setCustomSetups] = useState<string[]>([]);
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
@@ -94,6 +95,7 @@ export default function EditTradePage() {
           const d = await res.json();
           if (d.customInstruments) setCustomInstruments(JSON.parse(d.customInstruments));
           if (d.customSessions) setCustomSessions(JSON.parse(d.customSessions));
+          if (d.customSetups) setCustomSetups(JSON.parse(d.customSetups));
         }
       } catch {}
     }
@@ -187,7 +189,7 @@ export default function EditTradePage() {
             <label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>PNL ($){pnlAutoCalc && <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--accent-color)" }}>auto-calculated</span>}</label>
             <input type="number" step="any" name="pnl" value={formData.pnl} onChange={handleChange} className="notion-input" required />
           </div>
-          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Setup</label><input type="text" name="setup" value={formData.setup} onChange={handleChange} className="notion-input" placeholder="e.g. Breakout, IFVG" /></div>
+          <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Setup</label><ComboBox name="setup" value={formData.setup} onChange={v => setFormData(p => ({ ...p, setup: v }))} options={customSetups} placeholder="e.g. Breakout, IFVG" /></div>
           <div><label style={{ display: "block", fontSize: "15px", color: "var(--text-secondary)", marginBottom: "4px" }}>Trade Rating</label><div style={{ marginTop: "8px" }}><StarRating rating={formData.rating} onChange={v => setFormData(p => ({ ...p, rating: v }))} /></div></div>
         </div>
 

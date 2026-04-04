@@ -30,13 +30,14 @@ export async function GET() {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    // avatarId added via raw SQL — fetch separately
-    const avatarRows = await prisma.$queryRaw<{ avatarId: string | null }[]>`
-      SELECT "avatarId" FROM "User" WHERE id = ${userId} LIMIT 1
+    // avatarId + customSetups added via raw SQL — fetch separately
+    const extraRows = await prisma.$queryRaw<{ avatarId: string | null; customSetups: string | null }[]>`
+      SELECT "avatarId", "customSetups" FROM "User" WHERE id = ${userId} LIMIT 1
     `;
-    const avatarId = avatarRows[0]?.avatarId ?? null;
+    const avatarId = extraRows[0]?.avatarId ?? null;
+    const customSetups = extraRows[0]?.customSetups ?? null;
 
-    return NextResponse.json({ ...user, hasPassword: !!(user.password && user.password.length > 0), password: undefined, avatarId });
+    return NextResponse.json({ ...user, hasPassword: !!(user.password && user.password.length > 0), password: undefined, avatarId, customSetups });
   } catch (error) {
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
@@ -51,7 +52,7 @@ export async function PUT(req: Request) {
     }
 
     const userId = session.user.id;
-    const { name, customInstruments, customSessions } = await req.json();
+    const { name, customInstruments, customSessions, customSetups } = await req.json();
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -60,14 +61,15 @@ export async function PUT(req: Request) {
         customInstruments: customInstruments ? JSON.stringify(customInstruments) : null,
         customSessions: customSessions ? JSON.stringify(customSessions) : null,
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        customInstruments: true,
-        customSessions: true,
-      },
+      select: { id: true, name: true, email: true, customInstruments: true, customSessions: true },
     });
+
+    // Save customSetups via raw SQL
+    if (customSetups !== undefined) {
+      await prisma.$executeRaw`
+        UPDATE "User" SET "customSetups" = ${customSetups ? JSON.stringify(customSetups) : null} WHERE id = ${userId}
+      `;
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {

@@ -55,7 +55,7 @@ export default function ProfilePage() {
   const [avatarId, setAvatarId] = useState<string | null>(null);
   const [memberSince, setMemberSince] = useState<string>("");
 
-  const [formData, setFormData] = useState({ name: "", email: "", customInstruments: "", customSessions: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", customInstruments: "", customSessions: "", customSetups: "" });
   const [pwForm, setPwForm] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
   const [showPw, setShowPw] = useState({ old: false, new: false, confirm: false });
   const [isChangingPw, setIsChangingPw] = useState(false);
@@ -71,6 +71,7 @@ export default function ProfilePage() {
           email: data.email || "",
           customInstruments: data.customInstruments ? JSON.parse(data.customInstruments).join(", ") : "",
           customSessions: data.customSessions ? JSON.parse(data.customSessions).join(", ") : "",
+          customSetups: data.customSetups ? JSON.parse(data.customSetups).join(", ") : "",
         });
         setHasPassword(!!data.hasPassword);
         setAvatarId(data.avatarId ?? null);
@@ -92,6 +93,7 @@ export default function ProfilePage() {
           name: formData.name,
           customInstruments: formData.customInstruments.split(",").map(i => i.trim()).filter(Boolean),
           customSessions: formData.customSessions.split(",").map(s => s.trim()).filter(Boolean),
+          customSetups: formData.customSetups.split(",").map(s => s.trim()).filter(Boolean),
         }),
       });
       if (!res.ok) throw new Error();
@@ -285,6 +287,13 @@ export default function ProfilePage() {
                   onChange={e => setFormData(p => ({ ...p, customSessions: e.target.value }))}
                   className="notion-input" style={{ minHeight: "80px", resize: "vertical" }}
                   placeholder="e.g. NY-AM, NY-PM, London, Asia, Overnight" />
+              </Section>
+
+              <Section title="Custom Setups" desc="Your trade setups / strategies. Separate with commas.">
+                <textarea name="customSetups" value={formData.customSetups}
+                  onChange={e => setFormData(p => ({ ...p, customSetups: e.target.value }))}
+                  className="notion-input" style={{ minHeight: "80px", resize: "vertical" }}
+                  placeholder="e.g. IFVG, LIQ Sweep, Breakout, Reversion, OB" />
               </Section>
 
               <div style={{ display: "flex", justifyContent: "flex-end" }}>

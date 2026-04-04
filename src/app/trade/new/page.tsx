@@ -37,7 +37,7 @@ export default function NewTradePage() {
   const tagInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    instrument: "", direction: "Long",
+    instrument: "", direction: "",
     date: new Date().toISOString().slice(0, 10),
     session: "", entryPrice: "", exitPrice: "", stopLoss: "",
     contractSize: "", pnl: "", setup: "", emotions: "", notes: "", rating: 0,
@@ -45,6 +45,7 @@ export default function NewTradePage() {
 
   const [customInstruments, setCustomInstruments] = useState<string[]>([]);
   const [customSessions, setCustomSessions] = useState<string[]>([]);
+  const [customSetups, setCustomSetups] = useState<string[]>([]);
   const [existingUrls, setExistingUrls] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [pnlAutoCalc, setPnlAutoCalc] = useState(false);
@@ -66,6 +67,7 @@ export default function NewTradePage() {
     fetch("/api/profile").then(r => r.json()).then(d => {
       if (d.customInstruments) setCustomInstruments(JSON.parse(d.customInstruments));
       if (d.customSessions) setCustomSessions(JSON.parse(d.customSessions));
+      if (d.customSetups) setCustomSetups(JSON.parse(d.customSetups));
     }).catch(() => {});
   }, []);
 
@@ -194,7 +196,7 @@ export default function NewTradePage() {
             {fieldLabel("PNL ($)", pnlAutoCalc ? <span style={{ marginLeft: "8px", fontSize: "12px", color: "var(--accent-color)" }}>auto-calculated</span> : null)}
             <input type="number" step="any" name="pnl" value={formData.pnl} onChange={handleChange} className="notion-input" required placeholder="Amount" />
           </div>
-          <div>{fieldLabel("Setup")}<input type="text" name="setup" value={formData.setup} onChange={handleChange} className="notion-input" placeholder="e.g. Breakout, IFVG" /></div>
+          <div>{fieldLabel("Setup")}<ComboBox name="setup" value={formData.setup} onChange={v => setFormData(p => ({ ...p, setup: v }))} options={customSetups} placeholder="e.g. Breakout, IFVG" /></div>
           <div>
             {fieldLabel("Trade Rating")}
             <div style={{ marginTop: "8px" }}><StarRating rating={formData.rating} onChange={v => setFormData(p => ({ ...p, rating: v }))} /></div>
