@@ -8,9 +8,10 @@ import Avatar from "@/components/Avatar";
 interface ProfileDropdownProps {
   displayName: string | null;
   avatarId?: string | null;
+  isAdmin?: boolean;
 }
 
-export default function ProfileDropdown({ displayName, avatarId: initialAvatarId }: ProfileDropdownProps) {
+export default function ProfileDropdown({ displayName, avatarId: initialAvatarId, isAdmin }: ProfileDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [avatarId, setAvatarId] = useState(initialAvatarId ?? null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -106,6 +107,18 @@ export default function ProfileDropdown({ displayName, avatarId: initialAvatarId
           >
             Profile Settings
           </Link>
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setIsOpen(false)}
+              style={{ padding: "8px 12px", borderRadius: "4px", color: "#eb5757", textDecoration: "none", fontSize: "14px", transition: "background-color 0.2s", display: "flex", alignItems: "center", gap: "6px" }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--bg-hover)"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              Admin Panel
+            </Link>
+          )}
           <div style={{ height: "1px", backgroundColor: "var(--border-color)", margin: "4px 0" }}></div>
           <button 
             onClick={() => signOut({ callbackUrl: "/login" })}

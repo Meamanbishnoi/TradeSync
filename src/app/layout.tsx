@@ -37,6 +37,7 @@ export default async function RootLayout({
   const session = await getServerSession(authOptions);
   const displayName = session?.user?.name || session?.user?.email || null;
   const avatarId = session?.user?.avatarId ?? null;
+  const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin ?? false;
 
   return (
     <html lang="en" data-theme="" suppressHydrationWarning>
@@ -86,7 +87,7 @@ export default async function RootLayout({
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <ThemeToggle />
                 {session ? (
-                  <ProfileDropdown displayName={displayName ?? null} avatarId={avatarId} />
+                  <ProfileDropdown displayName={displayName ?? null} avatarId={avatarId} isAdmin={isAdmin} />
                 ) : (
                   <>
                     <Link href="/login" style={{ fontSize: "14px", color: 'var(--text-secondary)' }}>Login</Link>

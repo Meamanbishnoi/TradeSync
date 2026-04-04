@@ -29,6 +29,12 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Check if blocked
+        const rows = await prisma.$queryRaw<{ isBlocked: boolean; isAdmin: boolean }[]>`
+          SELECT "isBlocked", "isAdmin" FROM "User" WHERE id = ${user.id} LIMIT 1
+        `;
+        if (rows[0]?.isBlocked) throw new Error("Your account has been blocked. Contact admin.");
+
         const isCorrectPassword = await bcrypt.compare(
           credentials.password,
           user.password
@@ -38,7 +44,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
-        return { id: user.id, email: user.email, name: user.name };
+        return { id: user.id, email: user.email, name: user.name, isAdmin: rows[0]?.isAdmin ?? false };
       },
     }),
   ],
@@ -66,6 +72,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.name = user.name;
+        token.isAdmin = (user as { isAdmin?: boolean }).isAdmin ?? false;
         // Fetch avatarId once on login and store in token
         try {
           const rows = await prisma.$queryRaw<{ avatarId: string | null }[]>`
@@ -85,6 +92,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id;
         if (token.name) session.user.name = token.name as string;
         (session.user as { avatarId?: string | null }).avatarId = (token.avatarId as string | null) ?? null;
+        (session.user as { isAdmin?: boolean }).isAdmin = (token.isAdmin as boolean) ?? false;
       }
       return session;
     },
