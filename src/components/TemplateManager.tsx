@@ -100,8 +100,10 @@ export default function TemplateManager({ currentForm, onApply }: Props) {
         <>
           <div style={{ position: "fixed", inset: 0, zIndex: 49 }} onClick={() => setIsOpen(false)} />
           <div style={{
-            position: "absolute", top: "calc(100% + 6px)", left: 0,
-            width: "300px", backgroundColor: "var(--bg-color)",
+            position: "absolute", top: "calc(100% + 6px)",
+            right: 0,
+            width: "min(300px, calc(100vw - 32px))",
+            backgroundColor: "var(--bg-color)",
             border: "1px solid var(--border-color)", borderRadius: "10px",
             boxShadow: "0 8px 24px rgba(0,0,0,0.15)", zIndex: 50,
             overflow: "hidden",

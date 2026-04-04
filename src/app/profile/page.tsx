@@ -39,6 +39,27 @@ const EyeIcon = ({ open }: { open: boolean }) => open
   ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
 
+function Section({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "20px", marginBottom: "16px" }}>
+      <div style={{ marginBottom: desc ? "4px" : "16px" }}>
+        <div style={{ fontSize: "15px", fontWeight: 600 }}>{title}</div>
+        {desc && <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px", marginBottom: "14px" }}>{desc}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: "14px" }}>
+      <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "5px", fontWeight: 500 }}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const { showToast } = useToast();
@@ -147,23 +168,6 @@ export default function ProfilePage() {
   };
 
   if (isLoading) return <div style={{ textAlign: "center", marginTop: "100px", color: "var(--text-secondary)" }}>Loading...</div>;
-
-  const Section = ({ title, desc, children }: { title: string; desc?: string; children: React.ReactNode }) => (
-    <div style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border-color)", borderRadius: "10px", padding: "20px", marginBottom: "16px" }}>
-      <div style={{ marginBottom: desc ? "4px" : "16px" }}>
-        <div style={{ fontSize: "15px", fontWeight: 600 }}>{title}</div>
-        {desc && <div style={{ fontSize: "13px", color: "var(--text-secondary)", marginTop: "2px", marginBottom: "14px" }}>{desc}</div>}
-      </div>
-      {children}
-    </div>
-  );
-
-  const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div style={{ marginBottom: "14px" }}>
-      <label style={{ display: "block", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "5px", fontWeight: 500 }}>{label}</label>
-      {children}
-    </div>
-  );
 
   const PwInput = ({ field, placeholder }: { field: "old" | "new" | "confirm"; placeholder: string }) => (
     <div style={{ position: "relative" }}>
