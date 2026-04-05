@@ -5,8 +5,6 @@ import TradesTable from "@/components/TradesTable";
 import { redirect } from "next/navigation";
 import FloatingAddButton from "@/components/FloatingAddButton";
 
-export const dynamic = "force-dynamic";
-
 export default async function TradesPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");

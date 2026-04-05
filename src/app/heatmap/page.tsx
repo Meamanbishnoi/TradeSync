@@ -4,8 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import CalendarHeatmap from "@/components/CalendarHeatmap";
 
-export const dynamic = "force-dynamic";
-
 export default async function HeatmapPage() {
   const session = await getServerSession(authOptions);
 
