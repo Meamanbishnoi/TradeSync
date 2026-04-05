@@ -2,32 +2,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { unstable_cache } from "next/cache";
 import EquityCurve from "@/components/EquityCurve";
 import { format } from "date-fns";
 import FloatingAddButton from "@/components/FloatingAddButton";
 import DashboardClient from "@/components/DashboardClient";
 
-const getDashboardData = (userId: string) =>
-  unstable_cache(
-    async () => {
-      const [aggResult, trades] = await Promise.all([
-        prisma.trade.aggregate({
-          where: { userId },
-          _count: { id: true },
-          _sum: { pnl: true },
-        }),
-        prisma.trade.findMany({
-          where: { userId },
-          orderBy: { date: "asc" },
-          select: { id: true, instrument: true, date: true, direction: true, pnl: true, setup: true },
-        }),
-      ]);
-      return { aggResult, trades };
-    },
-    [`dashboard-${userId}`],
-    { revalidate: 30, tags: [`user-trades-${userId}`] }
-  )();
+export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
@@ -89,8 +69,22 @@ export default async function Dashboard() {
   }
 
   const userId = session.user.id;
-  const { aggResult, trades } = await getDashboardData(userId);
 
+  // Aggregate stats in DB — much faster than fetching all rows
+  const [aggResult, trades] = await Promise.all([
+    prisma.trade.aggregate({
+      where: { userId },
+      _count: { id: true },
+      _sum: { pnl: true },
+    }),
+    prisma.trade.findMany({
+      where: { userId },
+      orderBy: { date: "asc" },
+      select: { id: true, instrument: true, date: true, direction: true, pnl: true, setup: true },
+    }),
+  ]);
+
+  // Count wins/losses in JS from the lightweight select
   let wins = 0, losses = 0, grossWin = 0, grossLoss = 0;
   trades.forEach(t => {
     if (t.pnl >= 0) { wins++; grossWin += t.pnl; }

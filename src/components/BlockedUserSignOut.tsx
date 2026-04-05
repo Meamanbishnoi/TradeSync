@@ -3,17 +3,12 @@
 import { useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
 
-// Checks DB once per browser session to detect if user was blocked after login.
-// Uses sessionStorage to avoid hitting the API on every page navigation.
+// Checks DB directly on every mount — catches blocked status even with stale JWT
 export default function BlockedUserSignOut() {
   const { data: session, status } = useSession();
 
   useEffect(() => {
-    if (status !== "authenticated" || !session?.user?.id) return;
-
-    const cacheKey = `perm_checked_${session.user.id}`;
-    // Only check once per browser session
-    if (sessionStorage.getItem(cacheKey)) return;
+    if (status !== "authenticated") return;
 
     const check = async () => {
       try {
@@ -22,15 +17,12 @@ export default function BlockedUserSignOut() {
         const data = await res.json();
         if (data.isBlocked) {
           signOut({ callbackUrl: "/login?error=blocked" });
-          return;
         }
-        // Mark as checked so we don't re-check on every page
-        sessionStorage.setItem(cacheKey, "1");
       } catch {}
     };
 
     check();
-  }, [status, session?.user?.id]);
+  }, [status, session]);
 
   return null;
 }

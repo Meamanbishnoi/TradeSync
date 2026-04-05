@@ -11,7 +11,8 @@ import MobileNav from "@/components/MobileNav";
 import SecurityQuestionPrompt from "@/components/SecurityQuestionPrompt";
 import BlockedUserSignOut from "@/components/BlockedUserSignOut";
 
-// Root layout is NOT force-dynamic — session is read but pages opt-in to dynamic individually
+export const dynamic = "force-dynamic";
+
 export const viewport: Viewport = {
   themeColor: "#ffffff",
   width: "device-width",
@@ -36,7 +37,7 @@ export default async function RootLayout({
 }>) {
   const session = await getServerSession(authOptions);
   const displayName = session?.user?.name || session?.user?.email || null;
-  const avatarId = (session?.user as { avatarId?: string | null })?.avatarId ?? null;
+  const avatarId = session?.user?.avatarId ?? null;
   const isAdmin = (session?.user as { isAdmin?: boolean })?.isAdmin ?? false;
 
   return (
@@ -62,45 +63,55 @@ export default async function RootLayout({
       <body style={{ margin: 0, padding: 0 }}>
         <Providers>
           {isAdmin ? (
-            <>{children}</>
+            // Admin: render children directly, admin layout handles its own chrome
+            <>
+              {children}
+            </>
           ) : (
-            <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-              <nav style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "10px 16px", borderBottom: "1px solid var(--border-color)",
-                backgroundColor: "var(--bg-color)", flexShrink: 0, zIndex: 10, gap: "8px",
-              }}>
-                <Link href="/" style={{ display: "flex", alignItems: "center", gap: "10px", textDecoration: "none", flexShrink: 0 }}>
-                  <div style={{ background: "var(--text-primary)", color: "var(--bg-color)", width: "32px", height: "32px", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 3v18h18" /><path d="m19 9-5 5-4-4-3 3" />
-                    </svg>
-                  </div>
-                  <span style={{ fontWeight: 800, fontSize: "20px", color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
-                    Trade<span style={{ color: "var(--text-secondary)", fontWeight: 500 }}>Sync</span>
-                  </span>
-                </Link>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <ThemeToggle />
-                  {session ? (
-                    <ProfileDropdown displayName={displayName ?? null} avatarId={avatarId} isAdmin={isAdmin} />
-                  ) : (
-                    <>
-                      <Link href="/login" style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Login</Link>
-                      <Link href="/register" className="notion-button notion-button-primary" style={{ fontSize: "14px", padding: "6px 12px" }}>Sign up</Link>
-                    </>
-                  )}
+          <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
+            <nav style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '10px 16px', 
+              borderBottom: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-color)',
+              flexShrink: 0,
+              zIndex: 10,
+              gap: '8px',
+            }}>
+              <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}>
+                <div style={{ background: 'var(--text-primary)', color: 'var(--bg-color)', width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 3v18h18" />
+                    <path d="m19 9-5 5-4-4-3 3" />
+                  </svg>
                 </div>
-              </nav>
-              <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
-                {session && <Sidebar />}
-                <main className="main-content" style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-                  <div className="container">
-                    {children}
-                  </div>
-                </main>
+                <span style={{ fontWeight: 800, fontSize: "20px", color: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+                  Trade<span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Sync</span>
+                </span>
+              </Link>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <ThemeToggle />
+                {session ? (
+                  <ProfileDropdown displayName={displayName ?? null} avatarId={avatarId} isAdmin={isAdmin} />
+                ) : (
+                  <>
+                    <Link href="/login" style={{ fontSize: "14px", color: 'var(--text-secondary)' }}>Login</Link>
+                    <Link href="/register" className="notion-button notion-button-primary" style={{ fontSize: "14px", padding: "6px 12px" }}>Sign up</Link>
+                  </>
+                )}
               </div>
+            </nav>
+            <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
+              {session && <Sidebar />}
+              <main className="main-content" style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+                <div className="container">
+                  {children}
+                </div>
+              </main>
             </div>
+          </div>
           )}
           {session && !isAdmin && <MobileNav />}
           {session && !isAdmin && <SecurityQuestionPrompt />}

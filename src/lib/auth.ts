@@ -108,8 +108,29 @@ export const authOptions: NextAuthOptions = {
         if (sessionData?.name) token.name = sessionData.name;
         if (sessionData?.avatarId !== undefined) token.avatarId = sessionData.avatarId;
       }
-      // NOTE: Permissions are checked fresh via /api/auth/check on the client side.
-      // We do NOT re-query DB on every JWT refresh — that would hit DB on every page load.
+      // Always re-fetch permissions from DB on every token refresh (not just login)
+      // This ensures blocked users get kicked out and permission changes take effect immediately
+      if (!user && token.id && !token.isAdmin) {
+        try {
+          const rows = await prisma.$queryRaw<{
+            isBlocked: boolean;
+            canAddTrades: boolean;
+            canViewAnalytics: boolean;
+            canExport: boolean;
+            maxTrades: number | null;
+            maxImages: number | null;
+          }[]>`
+            SELECT "isBlocked", "canAddTrades", "canViewAnalytics", "canExport", "maxTrades", "maxImages"
+            FROM "User" WHERE id = ${token.id as string} LIMIT 1
+          `;
+          token.isBlocked = rows[0]?.isBlocked ?? false;
+          token.canAddTrades = rows[0]?.canAddTrades ?? true;
+          token.canViewAnalytics = rows[0]?.canViewAnalytics ?? true;
+          token.canExport = rows[0]?.canExport ?? true;
+          token.maxTrades = rows[0]?.maxTrades ?? null;
+          token.maxImages = rows[0]?.maxImages ?? null;
+        } catch {}
+      }
       return token;
     },
     async session({ session, token }) {

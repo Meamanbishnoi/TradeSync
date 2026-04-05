@@ -7,6 +7,8 @@ import DeleteTradeButton from "@/components/DeleteTradeButton";
 import ExpandableImage from "@/components/ExpandableImage";
 import StarRating from "@/components/StarRating";
 
+export const dynamic = "force-dynamic";
+
 export default async function TradeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
 
