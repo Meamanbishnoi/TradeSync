@@ -19,32 +19,39 @@ interface AdminUser {
 }
 
 type Tab = "overview" | "users";
-
 const PAGE_SIZE = 8;
+
+// Shorthand for CSS var references
+const v = (name: string) => `var(${name})` as string;
 
 function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
   return (
     <button type="button" onClick={onChange} disabled={disabled}
-      style={{ width: "36px", height: "20px", borderRadius: "10px", border: "none", cursor: disabled ? "default" : "pointer",
-        backgroundColor: checked ? "#10b981" : "#2a2a2a", position: "relative", transition: "background 0.2s",
+      style={{ width: "36px", height: "20px", borderRadius: "10px", border: "none",
+        cursor: disabled ? "default" : "pointer",
+        backgroundColor: checked ? "#10b981" : v("--a-toggle-off"),
+        position: "relative", transition: "background 0.2s",
         flexShrink: 0, opacity: disabled ? 0.4 : 1, outline: "none" }}>
       <span style={{ position: "absolute", top: "2px", left: checked ? "18px" : "2px", width: "16px", height: "16px",
-        borderRadius: "50%", backgroundColor: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.4)" }} />
+        borderRadius: "50%", backgroundColor: "#fff", transition: "left 0.15s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
     </button>
   );
 }
 
 function StatCard({ label, value, color, icon }: { label: string; value: number | string; color?: string; icon: React.ReactNode }) {
   return (
-    <div style={{ backgroundColor: "#111", border: "1px solid #222", borderRadius: "12px", padding: "20px 22px",
-      display: "flex", alignItems: "center", gap: "16px" }}>
-      <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: "#1a1a1a",
-        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: color ?? "#888" }}>
+    <div style={{ backgroundColor: v("--a-bg"), border: `1px solid ${v("--a-border")}`, borderRadius: "12px",
+      padding: "20px 22px", display: "flex", alignItems: "center", gap: "16px",
+      boxShadow: v("--a-card-shadow") }}>
+      <div style={{ width: "42px", height: "42px", borderRadius: "10px", backgroundColor: v("--a-bg3"),
+        display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: color ?? v("--a-text3") }}>
         {icon}
       </div>
       <div>
-        <div style={{ fontSize: "11px", color: "#555", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>{label}</div>
-        <div style={{ fontSize: "26px", fontWeight: 800, lineHeight: 1, color: color ?? "#fff" }}>{typeof value === "number" ? value.toLocaleString() : value}</div>
+        <div style={{ fontSize: "11px", color: v("--a-text3"), fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "4px" }}>{label}</div>
+        <div style={{ fontSize: "26px", fontWeight: 800, lineHeight: 1, color: color ?? v("--a-text") }}>
+          {typeof value === "number" ? value.toLocaleString() : value}
+        </div>
       </div>
     </div>
   );
@@ -123,11 +130,10 @@ export default function AdminPage() {
 
   const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
   const pagedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   useEffect(() => { setPage(1); }, [search]);
 
   if (isLoading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", gap: "10px", color: "#555" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh", gap: "10px", color: v("--a-text3") }}>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1s linear infinite" }}>
         <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
       </svg>
@@ -145,18 +151,22 @@ export default function AdminPage() {
     journal: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
   };
 
-  const th: React.CSSProperties = { padding: "11px 14px", fontWeight: 600, textAlign: "left", color: "#444",
+  const th: React.CSSProperties = {
+    padding: "11px 14px", fontWeight: 600, textAlign: "left", color: v("--a-text3"),
     fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap",
-    backgroundColor: "#0d0d0d", borderBottom: "1px solid #1e1e1e" };
-  const td: React.CSSProperties = { padding: "13px 14px", borderBottom: "1px solid #161616", fontSize: "13px", verticalAlign: "middle" };
+    backgroundColor: v("--a-th-bg"), borderBottom: `1px solid ${v("--a-border")}`,
+  };
+  const td: React.CSSProperties = {
+    padding: "13px 14px", borderBottom: `1px solid ${v("--a-border")}`, fontSize: "13px", verticalAlign: "middle",
+  };
 
   return (
     <div style={{ minHeight: "100vh" }}>
       {/* Page header */}
       <div style={{ marginBottom: "28px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h1 style={{ fontSize: "22px", fontWeight: 800, margin: 0, color: "#fff", letterSpacing: "-0.02em" }}>Admin Dashboard</h1>
-          <p style={{ color: "#444", fontSize: "13px", margin: "4px 0 0" }}>
+          <h1 style={{ fontSize: "22px", fontWeight: 800, margin: 0, color: v("--a-text"), letterSpacing: "-0.02em" }}>Admin Dashboard</h1>
+          <p style={{ color: v("--a-text3"), fontSize: "13px", margin: "4px 0 0" }}>
             {format(new Date(), "EEEE, MMMM d, yyyy")} · {session?.user?.email}
           </p>
         </div>
@@ -164,9 +174,10 @@ export default function AdminPage() {
           {(["overview", "users"] as Tab[]).map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
               padding: "8px 18px", fontSize: "13px", fontWeight: 500, borderRadius: "8px",
-              border: tab === t ? "1px solid #333" : "1px solid transparent",
-              backgroundColor: tab === t ? "#1a1a1a" : "transparent",
-              color: tab === t ? "#fff" : "#555", cursor: "pointer", fontFamily: "inherit",
+              border: `1px solid ${tab === t ? v("--a-border2") : "transparent"}`,
+              backgroundColor: tab === t ? v("--a-bg3") : "transparent",
+              color: tab === t ? v("--a-text") : v("--a-text3"),
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
             }}>
               {t === "overview" ? "Overview" : `Users (${users.length})`}
             </button>
@@ -179,7 +190,7 @@ export default function AdminPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px", marginBottom: "28px" }}>
           <StatCard label="Total Users" value={stats.totalUsers} icon={statIcons.users} />
           <StatCard label="New This Week" value={stats.recentUsers} color="#10b981" icon={statIcons.new} />
-          <StatCard label="Blocked" value={stats.blockedUsers} color={stats.blockedUsers > 0 ? "#ef4444" : "#fff"} icon={statIcons.blocked} />
+          <StatCard label="Blocked" value={stats.blockedUsers} color={stats.blockedUsers > 0 ? "#ef4444" : undefined} icon={statIcons.blocked} />
           <StatCard label="Total Trades" value={stats.totalTrades} icon={statIcons.trades} />
           <StatCard label="Screenshots" value={stats.totalImages} icon={statIcons.images} />
           <StatCard label="Journal Entries" value={stats.totalJournals} icon={statIcons.journal} />
@@ -189,34 +200,42 @@ export default function AdminPage() {
       {/* Overview tab */}
       {tab === "overview" && stats && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-          <div style={{ backgroundColor: "#111", border: "1px solid #1e1e1e", borderRadius: "12px", padding: "22px" }}>
-            <div style={{ fontSize: "12px", color: "#444", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "18px" }}>Platform Summary</div>
-            {[
-              { label: "Avg trades / user", value: stats.totalUsers > 0 ? (stats.totalTrades / stats.totalUsers).toFixed(1) : "0" },
-              { label: "Avg images / user", value: stats.totalUsers > 0 ? (stats.totalImages / stats.totalUsers).toFixed(1) : "0" },
-              { label: "Avg journal entries / user", value: stats.totalUsers > 0 ? (stats.totalJournals / stats.totalUsers).toFixed(1) : "0" },
-              { label: "Active users", value: (stats.totalUsers - stats.blockedUsers).toString() },
-            ].map(r => (
-              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: "1px solid #1a1a1a" }}>
-                <span style={{ fontSize: "13px", color: "#666" }}>{r.label}</span>
-                <span style={{ fontSize: "14px", fontWeight: 700, color: "#fff" }}>{r.value}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ backgroundColor: "#111", border: "1px solid #1e1e1e", borderRadius: "12px", padding: "22px" }}>
-            <div style={{ fontSize: "12px", color: "#444", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "18px" }}>Recent Users</div>
+          {[
+            {
+              title: "Platform Summary",
+              rows: [
+                { label: "Avg trades / user", value: stats.totalUsers > 0 ? (stats.totalTrades / stats.totalUsers).toFixed(1) : "0" },
+                { label: "Avg images / user", value: stats.totalUsers > 0 ? (stats.totalImages / stats.totalUsers).toFixed(1) : "0" },
+                { label: "Avg journal entries / user", value: stats.totalUsers > 0 ? (stats.totalJournals / stats.totalUsers).toFixed(1) : "0" },
+                { label: "Active users", value: (stats.totalUsers - stats.blockedUsers).toString() },
+              ],
+            },
+          ].map(card => (
+            <div key={card.title} style={{ backgroundColor: v("--a-bg"), border: `1px solid ${v("--a-border")}`, borderRadius: "12px", padding: "22px", boxShadow: v("--a-card-shadow") }}>
+              <div style={{ fontSize: "12px", color: v("--a-text3"), fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "18px" }}>{card.title}</div>
+              {card.rows.map(r => (
+                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 0", borderBottom: `1px solid ${v("--a-border")}` }}>
+                  <span style={{ fontSize: "13px", color: v("--a-text2") }}>{r.label}</span>
+                  <span style={{ fontSize: "14px", fontWeight: 700, color: v("--a-text") }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+          <div style={{ backgroundColor: v("--a-bg"), border: `1px solid ${v("--a-border")}`, borderRadius: "12px", padding: "22px", boxShadow: v("--a-card-shadow") }}>
+            <div style={{ fontSize: "12px", color: v("--a-text3"), fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "18px" }}>Recent Users</div>
             {users.slice(0, 7).map(u => (
-              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #1a1a1a" }}>
+              <div key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: `1px solid ${v("--a-border")}` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <div style={{ width: "30px", height: "30px", borderRadius: "50%", backgroundColor: "#1e1e1e", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#666", flexShrink: 0 }}>
+                  <div style={{ width: "30px", height: "30px", borderRadius: "50%", backgroundColor: v("--a-bg3"), border: `1px solid ${v("--a-border")}`,
+                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: v("--a-text3"), flexShrink: 0 }}>
                     {(u.name || u.email)[0].toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#e5e5e5" }}>{u.name || u.email.split("@")[0]}</div>
-                    <div style={{ fontSize: "11px", color: "#444" }}>{u.email}</div>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: v("--a-text") }}>{u.name || u.email.split("@")[0]}</div>
+                    <div style={{ fontSize: "11px", color: v("--a-text3") }}>{u.email}</div>
                   </div>
                 </div>
-                <div style={{ fontSize: "11px", color: "#444" }}>{format(new Date(u.createdAt), "MMM d")}</div>
+                <div style={{ fontSize: "11px", color: v("--a-text3") }}>{format(new Date(u.createdAt), "MMM d")}</div>
               </div>
             ))}
           </div>
@@ -229,18 +248,18 @@ export default function AdminPage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px", flexWrap: "wrap" }}>
             <div style={{ position: "relative" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#444", pointerEvents: "none" }}>
+                style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: v("--a-text3"), pointerEvents: "none" }}>
                 <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
               </svg>
               <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users..."
                 style={{ paddingLeft: "34px", paddingRight: "14px", paddingTop: "9px", paddingBottom: "9px", fontSize: "13px",
-                  backgroundColor: "#111", border: "1px solid #222", borderRadius: "8px", color: "#e5e5e5",
-                  outline: "none", width: "240px", fontFamily: "inherit" }} />
+                  backgroundColor: v("--a-input-bg"), border: `1px solid ${v("--a-border")}`, borderRadius: "8px",
+                  color: v("--a-text"), outline: "none", width: "240px", fontFamily: "inherit" }} />
             </div>
-            <span style={{ fontSize: "12px", color: "#444" }}>{filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}</span>
+            <span style={{ fontSize: "12px", color: v("--a-text3") }}>{filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}</span>
           </div>
 
-          <div style={{ border: "1px solid #1e1e1e", borderRadius: "12px", overflow: "hidden" }}>
+          <div style={{ border: `1px solid ${v("--a-border")}`, borderRadius: "12px", overflow: "hidden", boxShadow: v("--a-card-shadow") }}>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
@@ -252,26 +271,29 @@ export default function AdminPage() {
                 </thead>
                 <tbody>
                   {pagedUsers.map(u => (
-                    <tr key={u.id} style={{ backgroundColor: u.isBlocked ? "rgba(239,68,68,0.03)" : "transparent", transition: "background 0.1s" }}>
+                    <tr key={u.id} style={{ backgroundColor: u.isBlocked ? v("--a-blocked-row") : "transparent", transition: "background 0.1s" }}
+                      onMouseEnter={e => { if (!u.isBlocked) (e.currentTarget as HTMLTableRowElement).style.backgroundColor = v("--a-row-hover"); }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLTableRowElement).style.backgroundColor = u.isBlocked ? v("--a-blocked-row") : "transparent"; }}>
                       <td style={td}>
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: "#1a1a1a", border: "1px solid #2a2a2a",
-                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 700, color: "#666", flexShrink: 0 }}>
+                          <div style={{ width: "32px", height: "32px", borderRadius: "50%", backgroundColor: v("--a-bg3"),
+                            border: `1px solid ${v("--a-border")}`, display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: "12px", fontWeight: 700, color: v("--a-text3"), flexShrink: 0 }}>
                             {(u.name || u.email)[0].toUpperCase()}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 600, color: "#e5e5e5", display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
+                            <div style={{ fontWeight: 600, color: v("--a-text"), display: "flex", alignItems: "center", gap: "5px", flexWrap: "wrap" }}>
                               {u.name || u.email.split("@")[0]}
-                              {u.isAdmin && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "rgba(235,87,87,0.2)", color: "#ef4444", fontWeight: 700 }}>ADMIN</span>}
-                              {u.isBlocked && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "rgba(249,115,22,0.2)", color: "#f97316", fontWeight: 700 }}>BLOCKED</span>}
+                              {u.isAdmin && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "rgba(235,87,87,0.15)", color: "#ef4444", fontWeight: 700 }}>ADMIN</span>}
+                              {u.isBlocked && <span style={{ fontSize: "9px", padding: "1px 5px", borderRadius: "3px", backgroundColor: "rgba(249,115,22,0.15)", color: "#f97316", fontWeight: 700 }}>BLOCKED</span>}
                             </div>
-                            <div style={{ fontSize: "11px", color: "#444", marginTop: "1px" }}>{u.email}</div>
+                            <div style={{ fontSize: "11px", color: v("--a-text3"), marginTop: "1px" }}>{u.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ ...td, color: "#555", whiteSpace: "nowrap" }}>{format(new Date(u.createdAt), "MMM d, yyyy")}</td>
-                      <td style={{ ...td, color: "#888", fontWeight: 600 }}>{u.tradeCount}</td>
-                      <td style={{ ...td, color: "#888", fontWeight: 600 }}>{u.imageCount}</td>
+                      <td style={{ ...td, color: v("--a-text3"), whiteSpace: "nowrap" }}>{format(new Date(u.createdAt), "MMM d, yyyy")}</td>
+                      <td style={{ ...td, color: v("--a-text2"), fontWeight: 600 }}>{u.tradeCount}</td>
+                      <td style={{ ...td, color: v("--a-text2"), fontWeight: 600 }}>{u.imageCount}</td>
                       <td style={td}><Toggle checked={u.canAddTrades} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canAddTrades: !u.canAddTrades })} /></td>
                       <td style={td}><Toggle checked={u.canViewAnalytics} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canViewAnalytics: !u.canViewAnalytics })} /></td>
                       <td style={td}><Toggle checked={u.canExport} disabled={u.isAdmin || updating === u.id} onChange={() => patch(u.id, { canExport: !u.canExport })} /></td>
@@ -279,31 +301,31 @@ export default function AdminPage() {
                       <td style={td}>
                         {!u.isAdmin && (
                           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-                            {/* Trades limit */}
                             {editingLimit?.id === u.id && editingLimit.field === "maxTrades" ? (
                               <input autoFocus type="number" min="0" value={editingLimit.value}
                                 onChange={e => setEditingLimit({ ...editingLimit, value: e.target.value })}
                                 onBlur={() => saveLimit(u.id, "maxTrades", editingLimit.value)}
                                 onKeyDown={e => { if (e.key === "Enter") saveLimit(u.id, "maxTrades", editingLimit.value); if (e.key === "Escape") setEditingLimit(null); }}
-                                style={{ width: "60px", padding: "3px 6px", fontSize: "12px", backgroundColor: "#1a1a1a", border: "1px solid #10b981", borderRadius: "5px", color: "#fff", outline: "none" }} />
+                                style={{ width: "60px", padding: "3px 6px", fontSize: "12px", backgroundColor: v("--a-input-bg"), border: "1px solid #10b981", borderRadius: "5px", color: v("--a-text"), outline: "none" }} />
                             ) : (
                               <button onClick={() => !u.isAdmin && setEditingLimit({ id: u.id, field: "maxTrades", value: u.maxTrades?.toString() ?? "" })}
-                                title="Set trade limit" style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "5px", border: "1px solid #2a2a2a",
-                                  backgroundColor: "#161616", color: u.maxTrades != null ? "#10b981" : "#555", cursor: "pointer", whiteSpace: "nowrap" }}>
+                                title="Set trade limit" style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "5px",
+                                  border: `1px solid ${v("--a-border")}`, backgroundColor: v("--a-bg3"),
+                                  color: u.maxTrades != null ? "#10b981" : v("--a-text3"), cursor: "pointer", whiteSpace: "nowrap" }}>
                                 {u.maxTrades != null ? `≤${u.maxTrades}T` : "∞T"}
                               </button>
                             )}
-                            {/* Images limit */}
                             {editingLimit?.id === u.id && editingLimit.field === "maxImages" ? (
                               <input autoFocus type="number" min="0" value={editingLimit.value}
                                 onChange={e => setEditingLimit({ ...editingLimit, value: e.target.value })}
                                 onBlur={() => saveLimit(u.id, "maxImages", editingLimit.value)}
                                 onKeyDown={e => { if (e.key === "Enter") saveLimit(u.id, "maxImages", editingLimit.value); if (e.key === "Escape") setEditingLimit(null); }}
-                                style={{ width: "60px", padding: "3px 6px", fontSize: "12px", backgroundColor: "#1a1a1a", border: "1px solid #10b981", borderRadius: "5px", color: "#fff", outline: "none" }} />
+                                style={{ width: "60px", padding: "3px 6px", fontSize: "12px", backgroundColor: v("--a-input-bg"), border: "1px solid #10b981", borderRadius: "5px", color: v("--a-text"), outline: "none" }} />
                             ) : (
                               <button onClick={() => !u.isAdmin && setEditingLimit({ id: u.id, field: "maxImages", value: u.maxImages?.toString() ?? "" })}
-                                title="Set image limit" style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "5px", border: "1px solid #2a2a2a",
-                                  backgroundColor: "#161616", color: u.maxImages != null ? "#10b981" : "#555", cursor: "pointer", whiteSpace: "nowrap" }}>
+                                title="Set image limit" style={{ fontSize: "11px", padding: "3px 8px", borderRadius: "5px",
+                                  border: `1px solid ${v("--a-border")}`, backgroundColor: v("--a-bg3"),
+                                  color: u.maxImages != null ? "#10b981" : v("--a-text3"), cursor: "pointer", whiteSpace: "nowrap" }}>
                                 {u.maxImages != null ? `≤${u.maxImages}I` : "∞I"}
                               </button>
                             )}
@@ -325,36 +347,38 @@ export default function AdminPage() {
                     </tr>
                   ))}
                   {pagedUsers.length === 0 && (
-                    <tr><td colSpan={10} style={{ ...td, textAlign: "center", color: "#444", padding: "40px" }}>No users found</td></tr>
+                    <tr><td colSpan={10} style={{ ...td, textAlign: "center", color: v("--a-text3"), padding: "40px" }}>No users found</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px",
-                borderTop: "1px solid #1e1e1e", backgroundColor: "#0d0d0d" }}>
-                <span style={{ fontSize: "12px", color: "#444" }}>
+                borderTop: `1px solid ${v("--a-border")}`, backgroundColor: v("--a-th-bg") }}>
+                <span style={{ fontSize: "12px", color: v("--a-text3") }}>
                   Page {page} of {totalPages} · {filteredUsers.length} users
                 </span>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    style={{ padding: "5px 12px", fontSize: "12px", borderRadius: "6px", border: "1px solid #222",
-                      backgroundColor: "#111", color: page === 1 ? "#333" : "#aaa", cursor: page === 1 ? "default" : "pointer", fontFamily: "inherit" }}>
+                    style={{ padding: "5px 12px", fontSize: "12px", borderRadius: "6px", border: `1px solid ${v("--a-border")}`,
+                      backgroundColor: v("--a-bg"), color: page === 1 ? v("--a-text3") : v("--a-text2"),
+                      cursor: page === 1 ? "default" : "pointer", fontFamily: "inherit" }}>
                     ← Prev
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                     <button key={p} onClick={() => setPage(p)}
-                      style={{ padding: "5px 10px", fontSize: "12px", borderRadius: "6px", border: "1px solid #222",
-                        backgroundColor: p === page ? "#fff" : "#111", color: p === page ? "#000" : "#666",
+                      style={{ padding: "5px 10px", fontSize: "12px", borderRadius: "6px", border: `1px solid ${v("--a-border")}`,
+                        backgroundColor: p === page ? "#10b981" : v("--a-bg"),
+                        color: p === page ? "#fff" : v("--a-text2"),
                         cursor: "pointer", fontFamily: "inherit", fontWeight: p === page ? 700 : 400 }}>
                       {p}
                     </button>
                   ))}
                   <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    style={{ padding: "5px 12px", fontSize: "12px", borderRadius: "6px", border: "1px solid #222",
-                      backgroundColor: "#111", color: page === totalPages ? "#333" : "#aaa", cursor: page === totalPages ? "default" : "pointer", fontFamily: "inherit" }}>
+                    style={{ padding: "5px 12px", fontSize: "12px", borderRadius: "6px", border: `1px solid ${v("--a-border")}`,
+                      backgroundColor: v("--a-bg"), color: page === totalPages ? v("--a-text3") : v("--a-text2"),
+                      cursor: page === totalPages ? "default" : "pointer", fontFamily: "inherit" }}>
                     Next →
                   </button>
                 </div>
